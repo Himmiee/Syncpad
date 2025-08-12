@@ -14,11 +14,23 @@ datasource db {
 }
 
 model User {
-  id Int @id @default(autoincrement())
-  username String @unique
-  email String @unique
-  password String
-  avatar String
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  email     String   @unique
+  password  String
+  avatar    String   @default("https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1350&q=80")
+  refreshToken  String? 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  notes        Note[]    @relation("UserNotes")
+}
+
+model Note {
+  id         Int      @id @default(autoincrement())
+  title      String
+  content    Json?
+  ownerId    Int
+  owner      User     @relation("UserNotes", fields: [ownerId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
