@@ -1,59 +1,104 @@
+@import url('https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap');
 @import "tailwindcss";
+@import "tw-animate-css";
 
+@custom-variant dark (&:is(.dark *));
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+  --color-primary: #A78BFA; 
+  --color-primary-hover: #8B5CF6; 
 
+  --color-accent: #C4B5FD; 
+  --color-accent-hover: #A78BFA;
+
+  --color-bg: #F9FAFB;
+  --color-bg-dark: #0F172A;
+  --color-text: #111827;
+  --color-text-muted: #6B7280;
+  --color-border: #E5E7EB;
+
+  font-family: 'Figtree', system-ui, sans-serif;
   color-scheme: light dark;
-  background-color: #fff;
+  background-color: var(--color-bg);
+  --radius: 0.625rem;
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --background: #FFFFFF;
+  --foreground: #111827;
+  --card: #FFFFFF;
+  --card-foreground: #111827;
+  --popover: #FFFFFF;
+  --popover-foreground: #111827;
+  --primary: var(--color-primary);
+  --primary-foreground: #FFFFFF;
+  --secondary: #F3F4F6;
+  --secondary-foreground: #111827;
+  --muted: #F3F4F6;
+  --muted-foreground: var(--color-text-muted);
+  --accent: var(--color-accent);
+  --accent-foreground: #111827;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: var(--color-border);
+  --input: var(--color-border);
+  --ring: var(--color-accent);
 }
 
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-.card {
-  padding: 2em;
+.dark {
+  --background: #0F172A;
+  --foreground: #F9FAFB;
+  --card: #1E293B;
+  --card-foreground: #F9FAFB;
+  --popover: #1E293B;
+  --popover-foreground: #F9FAFB;
+  --primary: var(--color-primary);
+  --primary-foreground: #FFFFFF;
+  --secondary: #1E293B;
+  --secondary-foreground: #F9FAFB;
+  --muted: #1E293B;
+  --muted-foreground: #94A3B8;
+  --accent: var(--color-accent);
+  --accent-foreground: #F9FAFB;
+  --destructive: #DC2626;
+  --destructive-foreground: #FFFFFF;
+  --border: #334155;
+  --input: #334155;
+  --ring: var(--color-accent);
 }
 
-#app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+* {
+  font-family: 'Figtree', system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+@layer utilities {
+  .bg-primary { background-color: var(--primary); }
+  .bg-primary-hover { background-color: var(--color-primary-hover); }
+  .bg-accent { background-color: var(--accent); }
+  .bg-accent-hover { background-color: var(--color-accent-hover); }
+  .bg-background { background-color: var(--background); }
+  .bg-card { background-color: var(--card); }
+  .bg-muted { background-color: var(--muted); }
+  .bg-secondary { background-color: var(--secondary); }
+  .bg-destructive { background-color: var(--destructive); }
+
+  .text-primary { color: var(--primary); }
+  .text-foreground { color: var(--foreground); }
+  .text-muted { color: var(--muted-foreground); }
+  .text-primary-foreground { color: var(--primary-foreground); }
+  .text-card-foreground { color: var(--card-foreground); }
+  .text-secondary-foreground { color: var(--secondary-foreground); }
+  .text-accent-foreground { color: var(--accent-foreground); }
+  .text-destructive { color: var(--destructive); }
+  .text-destructive-foreground { color: var(--destructive-foreground); }
+  .text-muted-foreground { color: var(--muted-foreground); }
+
+
+  .border-primary { border-color: var(--primary); }
+  .border-border { border-color: var(--border); }
+  .border-input { border-color: var(--input); }
+  .border-accent { border-color: var(--accent); }
+  .border-muted { border-color: var(--muted); }
+
+  .hover\:bg-primary-hover:hover { background-color: var(--color-primary-hover); }
+  .hover\:bg-accent-hover:hover { background-color: var(--color-accent-hover); }
+  
+  .ring-ring { --tw-ring-color: var(--ring); }
 }
