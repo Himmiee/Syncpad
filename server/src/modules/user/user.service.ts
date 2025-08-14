@@ -21,19 +21,18 @@ export const createUser = async (
     throw new Error("Email or username already in use");
   }
 
-  // Upload avatar if file is provided
-  if (!file) {
-    throw new Error("Avatar image is required");
+  let avatarUrl: string | undefined;
+  if (file) {
+    const result = await cloudinaryUpload(file.buffer);
+    avatarUrl = result.url;
   }
-
-  const { url: avatarUrl } = await cloudinaryUpload(file.buffer);
 
   const user = await prisma.user.create({
     data: {
       username: data.username,
       email: data.email,
       password: hashedPassword,
-      avatar: avatarUrl,
+      avatar: avatarUrl, 
     },
     select: {
       id: true,
@@ -51,6 +50,7 @@ export const createUser = async (
     token: accessToken,
   };
 };
+
 
 // Find User by ID
 export const findUserById = async (id: number) => {
