@@ -14,7 +14,7 @@ import Tab from "@/components/shared/Tab.vue";
     <div class="flex flex-1 flex-col">
       <Header />
 
-      <main class="flex-1 bg-muted p-6 overflow-y-auto pb-20 md:pb-6">
+      <main class="flex-1 bg-muted  overflow-y-auto ">
         <RouterView />
       </main>
     </div>
