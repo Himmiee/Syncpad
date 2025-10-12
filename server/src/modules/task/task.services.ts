@@ -1,5 +1,5 @@
 import prisma from "@/config/db";
-import { TaskStatus } from "@/generated/prisma";
+import { CollaboratorRole, TaskStatus } from "@/generated/prisma";
 import { Task } from "@/types/notes";
 
 export const createUserTask = async (data: Task) => {
@@ -94,4 +94,123 @@ export const deleteUserTask = async (taskId: number, ownerId: number) => {
   if (task.ownerId !== ownerId) throw new Error("Unauthorized");
 
   await prisma.task.delete({ where: { id: taskId } });
+};
+
+export const getUserTasksByStatus = async (ownerId: number, status: string) => {
+  return await prisma.task.findMany({
+    where: {
+      ownerId,
+      status: status as any,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+};
+
+export const updateTaskStatus = async (
+  taskId: number,
+  ownerId: number,
+  status: string
+) => {
+  const existing = await prisma.task.findFirst({
+    where: { id: taskId, ownerId },
+  });
+  if (!existing) return null;
+
+  return await prisma.task.update({
+    where: { id: taskId },
+    data: { status: status as any },
+  });
+};
+
+export const addCollaboratorService = async (
+  taskId: number,
+  ownerId: number,
+  userId: number,
+  role: CollaboratorRole = "VIEWER"
+) => {
+  const task = await prisma.task.findUnique({
+    where: { id: taskId },
+    include: { collaborators: true },
+  });
+
+  if (!task || task.ownerId !== ownerId) {
+    throw new Error("Unauthorized or task not found");
+  }
+
+  const existing = await prisma.collaborator.findFirst({
+    where: { taskId, userId },
+  });
+
+  if (existing) {
+    throw new Error("Collaborator already added");
+  }
+
+  // Create collaborator
+  return await prisma.collaborator.create({
+    data: {
+      taskId,
+      userId,
+      role,
+    },
+    include: {
+      user: { select: { id: true, username: true, email: true } },
+    },
+  });
+};
+
+export const getCollaboratorsService = async (
+  taskId: number,
+  ownerId: number
+) => {
+  const task = await prisma.task.findUnique({
+    where: { id: taskId },
+    include: { collaborators: { include: { user: true } } },
+  });
+
+  if (!task) {
+    throw new Error("Task not found");
+  }
+
+  // Allow access if user is owner or collaborator
+  const isOwner = task.ownerId === ownerId;
+  const isCollaborator = task.collaborators.some((c) => c.userId === ownerId);
+
+  if (!isOwner && !isCollaborator) {
+    throw new Error("Unauthorized to view collaborators");
+  }
+
+  return task.collaborators.map((c) => ({
+    id: c.id,
+    role: c.role,
+    user: {
+      id: c.user.id,
+      username: c.user.username,
+      email: c.user.email,
+    },
+  }));
+};
+
+export const removeCollaboratorService = async (
+  taskId: number,
+  ownerId: number,
+  collabId: number
+) => {
+  const task = await prisma.task.findUnique({
+    where: { id: taskId },
+  });
+
+  if (!task || task.ownerId !== ownerId) {
+    throw new Error("Unauthorized or task not found");
+  }
+
+  // Delete collaborator
+  const deleted = await prisma.collaborator.deleteMany({
+    where: { id: collabId, taskId },
+  });
+
+  if (deleted.count === 0) {
+    throw new Error("Collaborator not found or already removed");
+  }
+
+  return true;
 };
