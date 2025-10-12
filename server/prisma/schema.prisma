@@ -14,6 +14,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+enum CollaboratorRole {
+  VIEWER
+  EDITOR
+}
+
 model User {
   id        Int      @id @default(autoincrement())
   username  String   @unique
@@ -36,24 +47,34 @@ model Note {
   owner      User     @relation("UserNotes", fields: [ownerId], references: [id])
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  collaborators Collaborator[] 
 }
 
 model Task {
   id        Int      @id @default(autoincrement())
   title     String
   description String?
-  status    String   @default("todo") // "todo", "in-progress", "done"
+  status    TaskStatus  @default(TODO) // "todo", "in-progress", "done"
   ownerId   Int
   owner     User     @relation(fields: [ownerId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  collaborators Collaborator[] 
+
+  
+  @@index([ownerId])
+  @@index([status])
 }
 
 model Collaborator {
-  id     Int   @id @default(autoincrement())
-  userId Int
-  noteId Int?
-  taskId Int?
-  role   String @default("editor") // "viewer" | "editor"
-  user   User  @relation(fields: [userId], references: [id])
+  id      Int              @id @default(autoincrement())
+  userId  Int
+  noteId  Int?
+  taskId  Int?
+  role    CollaboratorRole @default(VIEWER)
+  
+  user    User     @relation(fields: [userId], references: [id])
+  note    Note?    @relation(fields: [noteId], references: [id])
+  task    Task?    @relation(fields: [taskId], references: [id])
 }

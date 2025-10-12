@@ -5,26 +5,45 @@ import { AuthMiddleware } from "@/middleware/authMiddleware";
 const router = express.Router();
 
 // Get all notes
-router.get("/note/all", AuthMiddleware, noteControllers.GetNotes);
+router.get("/all", AuthMiddleware, noteControllers.GetNotes);
 
 // Create a new note
-router.post("/note/create", AuthMiddleware, noteControllers.CreateNotes);
+router.post("/create", AuthMiddleware, noteControllers.CreateNotes);
 
 // Get note by ID
-router.get("/note/detail/:id", AuthMiddleware, noteControllers.GetNoteById);
+router.get("/detail/:id", AuthMiddleware, noteControllers.GetNoteById);
 
 // Update note by ID
-router.patch(
-  "/note/update/:id",
-  AuthMiddleware,
-  noteControllers.UpdateNoteById
-);
+router.patch("/update/:id", AuthMiddleware, noteControllers.UpdateNoteById);
 
 // Delete note by ID
-router.delete(
-  "/note/delete/:id",
+router.delete("/delete/:id", AuthMiddleware, noteControllers.DeleteNoteById);
+
+// POST /:id/collaborators
+router.post(
+  "/:id/collaborators",
   AuthMiddleware,
-  noteControllers.DeleteNoteById
+  noteControllers.addCollaboratorToNote
 );
 
+// GET /:id/collaborators
+router.get(
+  "/:id/collaborators",
+  AuthMiddleware,
+  noteControllers.getAllCollaborators
+);
+
+// PATCH /:id/collaborators/:collabId
+router.patch(
+  "/:id/collaborators/:collabId",
+  AuthMiddleware,
+  noteControllers.updateCollaborator
+);
+
+// DELETE /:id/collaborators/:collabId
+router.delete(
+  "/:id/collaborators/:collabId",
+  AuthMiddleware,
+  noteControllers.deleteCollaborator
+);
 export default router;

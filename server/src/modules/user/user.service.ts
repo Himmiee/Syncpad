@@ -2,7 +2,6 @@ import { cloudinaryUpload } from "@/config/cloudinary";
 import prisma from "../../config/db";
 import { CreateUserInput, LoginInput } from "./user.validator";
 import { compareSync, hashSync } from "bcryptjs";
-import jwt from "jsonwebtoken";
 import { signAccessToken, signRefreshToken } from "@/config/jwt";
 
 export const createUser = async (
