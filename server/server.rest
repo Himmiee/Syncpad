@@ -1,5 +1,4 @@
-
-###  Login (Generates Access and Sets Refresh Token in Cookie)
+### 1️⃣ Login (to get Access Token)
 POST http://localhost:3030/v1/users/login
 Content-Type: application/json
 
@@ -8,14 +7,83 @@ Content-Type: application/json
   "password": "YourPassword@123"
 }
 ###
+# Copy the "accessToken" from the login response below and paste it in the Authorization header for all requests
 
-### Refresh Access Token
-#  Paste the refreshToken from the login response cookie below
-POST http://localhost:3030/v1/users/refresh
-Cookie: refreshToken=PASTE_YOUR_REFRESH_TOKEN_HERE
+### 2️⃣ Create a New Task
+POST http://localhost:3030/v1/tasks/create
+Content-Type: application/json
+# Authorization: Bearer {{accessToken}}
+
+{
+  "title": "Complete Project Report",
+  "description": "Complete the project report and submit before Friday"
+}
 ###
 
-### Get All Users (no auth required )
-GET http://localhost:3030/v1/users
+### 3️⃣ Get All Tasks (for logged-in user)
+GET http://localhost:3030/v1/tasks/all
+# Authorization: Bearer {{accessToken}}
+###
 
+### 4️⃣ Get Task by ID
+# Replace 1 with your real task ID
+GET http://localhost:3030/v1/tasks/1
+# Authorization: Bearer {{accessToken}}
+###
 
+### 5️⃣ Update Task (Title, Description, or Status)
+PATCH http://localhost:3030/v1/tasks/1
+Content-Type: application/json
+# Authorization: Bearer {{accessToken}}
+
+{
+  "title": "Updated Report Task",
+  "description": "Include executive summary and references",
+  "status": "IN_PROGRESS"
+}
+###
+
+### 6️⃣ Update Only Task Status (Kanban style)
+PATCH http://localhost:3030/v1/tasks/1/status
+Content-Type: application/json
+# Authorization: Bearer {{accessToken}}
+
+{
+  "status": "DONE"
+}
+###
+
+### 7️⃣ Get Tasks by Status
+GET http://localhost:3030/v1/tasks/status/TODO
+# Authorization: Bearer {{accessToken}}
+###
+
+### 8️⃣ Delete Task
+DELETE http://localhost:3030/v1/tasks/1
+# Authorization: Bearer {{accessToken}}
+###
+
+# ===============================
+# 👥 COLLABORATOR ROUTES
+# ===============================
+
+### 9️⃣ Add Collaborator to Task
+POST http://localhost:3030/v1/tasks/2/collaborators
+Content-Type: application/json
+# Authorization: Bearer {{accessToken}}
+
+{
+  "userId": 3,
+  "role": "EDITOR"
+}
+###
+
+### 🔟 Get All Collaborators for a Task
+GET http://localhost:3030/v1/tasks/2/collaborators
+# Authorization: Bearer {{accessToken}}
+###
+
+### 1️⃣1️⃣ Remove a Collaborator from Task
+DELETE http://localhost:3030/v1/tasks/2/collaborators/5
+# Authorization: Bearer {{accessToken}}
+###
