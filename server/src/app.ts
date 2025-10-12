@@ -1,6 +1,7 @@
 import express from "express";
 import userRouter from "./modules/user/user.route";
 import noteRouter from "./modules/notes/notes.route";
+import taskRouter from "./modules/task/task.route";
 import { ErrorHandler } from "./middleware/errorHandler";
 import cookieParser from "cookie-parser";
 // import cors from "cors";
@@ -19,4 +20,5 @@ app.use(express.json());
 
 app.use("/v1/users", userRouter);
 app.use("/v1/notes", noteRouter);
+app.use("/v1/tasks", taskRouter);
 app.use(ErrorHandler);
