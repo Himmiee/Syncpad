@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&family=Nunito+Sans:ital,opsz,wght@0,6..12,200..1000;1,6..12,200..1000&family=Outfit:wght@100..900&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -16,7 +16,7 @@
   --color-text-muted: #6B7280;
   --color-border: #E5E7EB;
 
-  font-family: 'Figtree', system-ui, sans-serif;
+  font-family: "Nunito Sans", sans-serif;
   color-scheme: light dark;
   background-color: var(--color-bg);
   --radius: 0.625rem;
@@ -65,8 +65,17 @@
 }
 
 * {
-  font-family: 'Figtree', system-ui, sans-serif;
+  font-family: "Nunito Sans", sans-serif;
  }
+
+.font-outfit {
+  font-family: "Outfit", sans-serif;
+}
+
+.font-figtree {
+  font-family: "Figtree", sans-serif;
+}
+
 
 @layer utilities {
   .bg-primary { background-color: var(--primary); }
