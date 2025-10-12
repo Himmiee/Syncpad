@@ -4,16 +4,32 @@ import { upload } from "@/config/upload";
 
 const router = express.Router();
 
-//api/users/register
+/**
+ * @route   POST /users/register
+ * @desc    Register a new user (with optional avatar upload)
+ * @access  Public
+ */
 router.post("/register", upload.single("avatar"), userControllers.CreateUser);
 
-//api/users/login
+/**
+ * @route   POST /users/login
+ * @desc    Authenticate a user and issue access + refresh tokens
+ * @access  Public
+ */
 router.post("/login", userControllers.LoginUser);
 
-//api/users
+/**
+ * @route   GET /users
+ * @desc    Retrieve a list of all registered users
+ * @access  Public (optional: can be restricted later for admin use)
+ */
 router.get("/", userControllers.ListUsers);
 
-//refresh
+/**
+ * @route   POST /users/refresh
+ * @desc    Refresh the user’s access token using a valid refresh token
+ * @access  Public
+ */
 router.post("/refresh", userControllers.RefreshToken);
 
 
