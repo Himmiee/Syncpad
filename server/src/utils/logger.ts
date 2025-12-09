@@ -1,9 +1,21 @@
-//  check the current environment to avoid logging in production environmenr
-const isDev = process.env.NODE_ENV !== "production";
+import { logger as winstonLogger } from "@/config/logger.config";
 
-export const logger = {
-  info: (...args: any[]) => isDev && console.info("[INFO]", ...args),
-  warn: (...args: any[]) => isDev && console.warn("[WARN]", ...args),
-  error: (...args: any[]) => isDev && console.error("[ERROR", ...args),
-  log: (...args: any[]) => isDev && console.log("[LOG]", ...args),
+// Export Winston logger instance
+export const logger = winstonLogger;
+
+// Helper methods for convenience
+export const logInfo = (message: string, meta?: any) => {
+  logger.info(message, meta);
+};
+
+export const logError = (message: string, error?: any) => {
+  logger.error(message, { error: error?.message, stack: error?.stack });
+};
+
+export const logWarn = (message: string, meta?: any) => {
+  logger.warn(message, meta);
+};
+
+export const logDebug = (message: string, meta?: any) => {
+  logger.debug(message, meta);
 };

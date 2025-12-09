@@ -25,6 +25,27 @@ enum CollaboratorRole {
   EDITOR
 }
 
+enum SharePermission {
+  VIEW
+  EDIT
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  SHARE
+  INVITE
+  RESTORE
+}
+
 model User {
   id        Int      @id @default(autoincrement())
   username  String   @unique
@@ -34,9 +55,13 @@ model User {
   refreshToken  String? 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  notes        Note[]    @relation("UserNotes")
-  tasks Task[]
+  
+  notes         Note[]         @relation("UserNotes")
+  tasks         Task[]
   collaborators Collaborator[]
+  shareLinks    ShareLink[]
+  invitations   Invitation[]   @relation("InvitedBy")
+  auditLogs     AuditLog[]
 }
 
 model Note {
@@ -47,14 +72,19 @@ model Note {
   owner      User     @relation("UserNotes", fields: [ownerId], references: [id])
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  collaborators Collaborator[] 
+  
+  collaborators Collaborator[]
+  shareLinks    ShareLink[]
+  invitations   Invitation[]
+  auditLogs     AuditLog[]
+  versions      NoteVersion[]
 }
 
 model Task {
   id        Int      @id @default(autoincrement())
   title     String
   description String?
-  status    TaskStatus  @default(TODO) // "todo", "in-progress", "done"
+  status    TaskStatus  @default(TODO)
   ownerId   Int
   owner     User     @relation(fields: [ownerId], references: [id])
   createdAt DateTime @default(now())
@@ -77,4 +107,80 @@ model Collaborator {
   user    User     @relation(fields: [userId], references: [id])
   note    Note?    @relation(fields: [noteId], references: [id])
   task    Task?    @relation(fields: [taskId], references: [id])
+}
+
+model ShareLink {
+  id          Int             @id @default(autoincrement())
+  token       String          @unique
+  noteId      Int
+  createdById Int
+  permission  SharePermission @default(VIEW)
+  expiresAt   DateTime?
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  
+  note        Note            @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  createdBy   User            @relation(fields: [createdById], references: [id])
+  
+  @@index([token])
+  @@index([noteId])
+}
+
+model Invitation {
+  id          Int              @id @default(autoincrement())
+  email       String
+  noteId      Int
+  invitedById Int
+  role        CollaboratorRole @default(VIEWER)
+  token       String           @unique
+  status      InvitationStatus @default(PENDING)
+  expiresAt   DateTime
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  
+  note        Note             @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  invitedBy   User             @relation("InvitedBy", fields: [invitedById], references: [id])
+  
+  @@index([email])
+  @@index([token])
+  @@unique([email, noteId])
+}
+
+model AuditLog {
+  id          Int         @id @default(autoincrement())
+  action      AuditAction
+  entityType  String      // "note", "task", etc.
+  entityId    Int
+  userId      Int
+  noteId      Int?        // For quick filtering
+  changes     Json?       // Store what changed
+  metadata    Json?       // Additional context
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime    @default(now())
+  
+  user        User        @relation(fields: [userId], references: [id])
+  note        Note?       @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([noteId])
+  @@index([createdAt])
+}
+
+model NoteVersion {
+  id          Int      @id @default(autoincrement())
+  noteId      Int
+  title       String
+  content     Json?
+  version     Int      // Sequential version number
+  createdById Int      // Who created this version
+  createdAt   DateTime @default(now())
+  
+  note        Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  
+  @@index([noteId])
+  @@index([noteId, version])
+  @@unique([noteId, version])
 }

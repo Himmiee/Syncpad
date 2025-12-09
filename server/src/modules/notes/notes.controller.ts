@@ -11,6 +11,10 @@ import {
   updateNoteWithId,
 } from "./notes.services";
 import { CollaboratorRole } from "@/generated/prisma";
+import {
+  getPaginationParams,
+  createPaginatedResponse,
+} from "@/utils/pagination.utils";
 
 // Create notes for user
 export const CreateNotes = async (
@@ -39,7 +43,7 @@ export const CreateNotes = async (
   }
 };
 
-//  Get all notes for a given user
+//  Get all notes for a given user with pagination
 export const GetNotes = async (
   req: Request,
   res: Response,
@@ -51,11 +55,19 @@ export const GetNotes = async (
     if (!userId) {
       return res.status(400).json({ message: "User ID missing" });
     }
-    const notes = await getUserNotes(Number(userId));
+
+    // Get pagination parameters from query
+    const { page, limit, skip } = getPaginationParams(req);
+
+    // Fetch notes with pagination
+    const { notes, total } = await getUserNotes(Number(userId), skip, limit);
+
+    // Create paginated response
+    const response = createPaginatedResponse(notes, total, page, limit);
 
     return res.status(200).json({
       message: "Notes retrieved successfully",
-      notes,
+      ...response,
     });
   } catch (err) {
     next(err);
