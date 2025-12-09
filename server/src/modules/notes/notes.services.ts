@@ -3,12 +3,25 @@ import { Notes } from "../../types/notes";
 import { findUserById } from "../user/user.service";
 import { CollaboratorRole } from "@/generated/prisma";
 
-// Get all user notes
-export const getUserNotes = async (id: number) => {
-  return await prisma.note.findMany({
-    where: { ownerId: id },
-    orderBy: { id: "desc" },
-  });
+// Get all user notes with pagination
+export const getUserNotes = async (
+  id: number,
+  skip?: number,
+  take?: number
+) => {
+  const [notes, total] = await Promise.all([
+    prisma.note.findMany({
+      where: { ownerId: id },
+      orderBy: { id: "desc" },
+      ...(skip !== undefined && { skip }),
+      ...(take !== undefined && { take }),
+    }),
+    prisma.note.count({
+      where: { ownerId: id },
+    }),
+  ]);
+
+  return { notes, total };
 };
 
 // Create user note
