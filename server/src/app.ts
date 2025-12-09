@@ -10,18 +10,25 @@ import { ErrorHandler } from "./middleware/errorHandler";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import { requestLogger } from "./middleware/requestLogger.middleware";
+import swaggerUi from "swagger-ui-express";
+import YAML from "yamljs";
+import path from "path";
 
 export const app = express();
+
+// Load OpenAPI specification
+const swaggerDocument = YAML.load(path.join(__dirname, "../docs/openapi.yaml"));
 
 // CORS configuration
 const allowedOrigins = process.env.CORS_ORIGIN?.split(",") || [
   "http://localhost:5173",
+  "http://localhost:3030", // Allow Swagger UI
 ];
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl requests)
+      // Allow requests with no origin (like mobile apps, curl, or same-origin requests)
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -40,6 +47,10 @@ app.use(express.json());
 // Request logging middleware
 app.use(requestLogger);
 
+// API Documentation
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+// API Routes
 app.use("/v1/users", userRouter);
 app.use("/v1/notes", noteRouter);
 app.use("/v1/tasks", taskRouter);

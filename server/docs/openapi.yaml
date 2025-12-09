@@ -1,0 +1,935 @@
+openapi: 3.0.0
+info:
+  title: SyncPad API
+  version: 1.0.0
+  description: API documentation for SyncPad - A collaborative note-taking and task management platform
+  contact:
+    name: SyncPad Team
+    email: support@syncpad.com
+
+servers:
+  - url: http://localhost:3030
+    description: Development server
+  - url: https://api.syncpad.com
+    description: Production server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: NOT_FOUND
+            message:
+              type: string
+              example: Resource not found
+            statusCode:
+              type: number
+              example: 404
+
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 10
+        total:
+          type: integer
+          example: 45
+        totalPages:
+          type: integer
+          example: 5
+
+    Note:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: object
+        ownerId:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ShareLink:
+      type: object
+      properties:
+        id:
+          type: integer
+        token:
+          type: string
+        noteId:
+          type: integer
+        permission:
+          type: string
+          enum: [VIEW, EDIT]
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    Invitation:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        noteId:
+          type: integer
+        role:
+          type: string
+          enum: [VIEWER, EDITOR]
+        status:
+          type: string
+          enum: [PENDING, ACCEPTED, EXPIRED, REVOKED]
+        token:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        action:
+          type: string
+          enum: [CREATE, UPDATE, DELETE, SHARE, INVITE, RESTORE]
+        entityType:
+          type: string
+        entityId:
+          type: integer
+        userId:
+          type: integer
+        noteId:
+          type: integer
+          nullable: true
+        changes:
+          type: object
+        createdAt:
+          type: string
+          format: date-time
+
+    NoteVersion:
+      type: object
+      properties:
+        id:
+          type: integer
+        noteId:
+          type: integer
+        version:
+          type: integer
+        title:
+          type: string
+        content:
+          type: object
+        createdById:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [TODO, IN_PROGRESS, DONE]
+        ownerId:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        avatar:
+          type: string
+          nullable: true
+
+paths:
+  /v1/notes:
+    get:
+      summary: Get all notes for authenticated user
+      tags:
+        - Notes
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Items per page
+      responses:
+        '200':
+          description: Notes retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Note'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      summary: Create a new note
+      tags:
+        - Notes
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - content
+              properties:
+                title:
+                  type: string
+                content:
+                  type: object
+      responses:
+        '201':
+          description: Note created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  note:
+                    $ref: '#/components/schemas/Note'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/notes/{id}:
+    get:
+      summary: Get a specific note by ID
+      tags:
+        - Notes
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Note retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  note:
+                    $ref: '#/components/schemas/Note'
+        '404':
+          description: Note not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    patch:
+      summary: Update a note
+      tags:
+        - Notes
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                content:
+                  type: object
+      responses:
+        '200':
+          description: Note updated successfully
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Delete a note
+      tags:
+        - Notes
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Note deleted successfully
+        '403':
+          description: Forbidden
+
+  /v1/share/note/{id}/link:
+    post:
+      summary: Create a shareable link for a note
+      tags:
+        - Share
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                permission:
+                  type: string
+                  enum: [VIEW, EDIT]
+                  default: VIEW
+                expiresInDays:
+                  type: integer
+                  description: Number of days until link expires
+      responses:
+        '201':
+          description: Share link created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  shareLink:
+                    $ref: '#/components/schemas/ShareLink'
+                  url:
+                    type: string
+                    example: http://localhost:5173/shared/abc-123
+
+  /v1/share/note/{id}/links:
+    get:
+      summary: Get all share links for a note
+      tags:
+        - Share
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Share links retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  links:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ShareLink'
+
+  /v1/share/public/{token}:
+    get:
+      summary: Access a shared note (public, no authentication required)
+      tags:
+        - Share
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Shared note retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  note:
+                    $ref: '#/components/schemas/Note'
+                  permission:
+                    type: string
+                  canEdit:
+                    type: boolean
+        '403':
+          description: Link expired or revoked
+        '404':
+          description: Invalid link
+
+  /v1/invitations/send:
+    post:
+      summary: Send an invitation to collaborate on a note
+      tags:
+        - Invitations
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - noteId
+                - email
+              properties:
+                noteId:
+                  type: integer
+                email:
+                  type: string
+                  format: email
+                role:
+                  type: string
+                  enum: [VIEWER, EDITOR]
+                  default: VIEWER
+      responses:
+        '201':
+          description: Invitation sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  invitation:
+                    $ref: '#/components/schemas/Invitation'
+
+  /v1/invitations/accept/{token}:
+    post:
+      summary: Accept an invitation
+      tags:
+        - Invitations
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Invitation accepted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  noteId:
+                    type: integer
+
+  /v1/audit/note/{id}:
+    get:
+      summary: Get audit logs for a specific note
+      tags:
+        - Audit
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Audit logs retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  logs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditLog'
+
+  /v1/audit/my-activity:
+    get:
+      summary: Get audit logs for authenticated user's activity
+      tags:
+        - Audit
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 100
+      responses:
+        '200':
+          description: Activity logs retrieved successfully
+
+  /v1/versions/note/{id}:
+    get:
+      summary: Get all versions of a note
+      tags:
+        - Versions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Versions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  versions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NoteVersion'
+
+  /v1/versions/note/{id}/restore/{version}:
+    post:
+      summary: Restore a note to a specific version
+      tags:
+        - Versions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: version
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Note restored successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  note:
+                    $ref: '#/components/schemas/Note'
+
+  /v1/users/register:
+    post:
+      summary: Register a new user
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - email
+                - password
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/users/login:
+    post:
+      summary: Login user
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  token:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/users/profile:
+    get:
+      summary: Get user profile
+      tags:
+        - Authentication
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+
+  /v1/users:
+    get:
+      summary: Get all registered users
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+
+  /v1/users/refresh:
+    post:
+      summary: Refresh access token using refresh token
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                  refreshToken:
+                    type: string
+        '401':
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/tasks:
+    get:
+      summary: Get all tasks for authenticated user
+      tags:
+        - Tasks
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Tasks retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  tasks:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Task'
+
+    post:
+      summary: Create a new task
+      tags:
+        - Tasks
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '201':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  task:
+                    $ref: '#/components/schemas/Task'
+
+  /v1/tasks/{id}:
+    get:
+      summary: Get a specific task by ID
+      tags:
+        - Tasks
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Task retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  task:
+                    $ref: '#/components/schemas/Task'
+
+    patch:
+      summary: Update a task
+      tags:
+        - Tasks
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                status:
+                  type: string
+                  enum: [TODO, IN_PROGRESS, DONE]
+      responses:
+        '200':
+          description: Task updated successfully
+
+    delete:
+      summary: Delete a task
+      tags:
+        - Tasks
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Task deleted successfully
+
+tags:
+  - name: Authentication
+    description: User authentication and profile management
+  - name: Notes
+    description: Note management endpoints
+  - name: Tasks
+    description: Task management endpoints
+  - name: Share
+    description: Share link management
+  - name: Invitations
+    description: Collaboration invitations
+  - name: Audit
+    description: Activity tracking and audit logs
+  - name: Versions
+    description: Version control and history
