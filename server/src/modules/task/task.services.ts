@@ -2,6 +2,12 @@ import prisma from "@/config/db";
 import { CollaboratorRole, TaskStatus } from "@/generated/prisma";
 import { Task } from "@/types/notes";
 
+/**
+ * Create a new task for a user
+ * @param data - Task data including title, description, and ownerId
+ * @returns Created task
+ * @throws Error if user ID is invalid
+ */
 export const createUserTask = async (data: Task) => {
   const user = await prisma.user.findUnique({
     where: { id: data.ownerId },
@@ -17,6 +23,11 @@ export const createUserTask = async (data: Task) => {
   });
 };
 
+/**
+ * Get all tasks for a user
+ * @param ownerId - ID of the task owner
+ * @returns Array of tasks ordered by creation date
+ */
 export const getUserTasks = async (ownerId: number) => {
   return await prisma.task.findMany({
     where: { ownerId },
@@ -32,6 +43,11 @@ export const getUserTasks = async (ownerId: number) => {
   });
 };
 
+/**
+ * Find a task by ID with owner and collaborators
+ * @param id - Task ID
+ * @returns Task with owner and collaborator details or null
+ */
 export const findTaskById = async (id: number) => {
   return await prisma.task.findUnique({
     where: { id },
@@ -67,6 +83,14 @@ export const findTaskById = async (id: number) => {
   });
 };
 
+/**
+ * Update a task (title, description, or status)
+ * @param taskId - ID of the task to update
+ * @param ownerId - ID of the task owner
+ * @param data - Fields to update
+ * @returns Updated task
+ * @throws Error if task not found or unauthorized
+ */
 export const updateUserTask = async (
   taskId: number,
   ownerId: number,
@@ -87,6 +111,12 @@ export const updateUserTask = async (
   });
 };
 
+/**
+ * Delete a task
+ * @param taskId - ID of the task to delete
+ * @param ownerId - ID of the task owner
+ * @throws Error if task not found or unauthorized
+ */
 export const deleteUserTask = async (taskId: number, ownerId: number) => {
   const task = await prisma.task.findUnique({ where: { id: taskId } });
 
@@ -96,6 +126,12 @@ export const deleteUserTask = async (taskId: number, ownerId: number) => {
   await prisma.task.delete({ where: { id: taskId } });
 };
 
+/**
+ * Get user tasks filtered by status
+ * @param ownerId - ID of the task owner
+ * @param status - Task status (TODO, IN_PROGRESS, DONE)
+ * @returns Array of tasks with the specified status
+ */
 export const getUserTasksByStatus = async (ownerId: number, status: string) => {
   return await prisma.task.findMany({
     where: {
@@ -106,6 +142,13 @@ export const getUserTasksByStatus = async (ownerId: number, status: string) => {
   });
 };
 
+/**
+ * Update task status only
+ * @param taskId - ID of the task
+ * @param ownerId - ID of the task owner
+ * @param status - New status
+ * @returns Updated task or null if not found
+ */
 export const updateTaskStatus = async (
   taskId: number,
   ownerId: number,
@@ -122,6 +165,15 @@ export const updateTaskStatus = async (
   });
 };
 
+/**
+ * Add a collaborator to a task
+ * @param taskId - ID of the task
+ * @param ownerId - ID of the task owner
+ * @param userId - ID of the user to add as collaborator
+ * @param role - Collaborator role (VIEWER or EDITOR)
+ * @returns Created collaborator with user details
+ * @throws Error if unauthorized, task not found, or collaborator already exists
+ */
 export const addCollaboratorService = async (
   taskId: number,
   ownerId: number,
@@ -158,6 +210,13 @@ export const addCollaboratorService = async (
   });
 };
 
+/**
+ * Get all collaborators for a task
+ * @param taskId - ID of the task
+ * @param ownerId - ID of the requesting user
+ * @returns Array of collaborators with user details
+ * @throws Error if task not found or unauthorized
+ */
 export const getCollaboratorsService = async (
   taskId: number,
   ownerId: number
@@ -190,6 +249,14 @@ export const getCollaboratorsService = async (
   }));
 };
 
+/**
+ * Remove a collaborator from a task
+ * @param taskId - ID of the task
+ * @param ownerId - ID of the task owner
+ * @param collabId - ID of the collaborator to remove
+ * @returns True if successful
+ * @throws Error if unauthorized, task not found, or collaborator not found
+ */
 export const removeCollaboratorService = async (
   taskId: number,
   ownerId: number,
