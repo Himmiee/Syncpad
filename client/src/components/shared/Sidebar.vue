@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight } from "lucide-vue-next";
 import { navItems } from "@/data/data";
 
 const isCollapsed = ref(false);
+const currentYear = new Date().getFullYear();
 </script>
 
 <template>
@@ -35,16 +36,16 @@ const isCollapsed = ref(false);
         v-for="item in navItems"
         :key="item.to"
         :to="item.to"
-        class="group flex items-center gap-4 py-3 px-3 rounded-xl transition-all duration-300 hover:bg-[#7B63FF]/10 hover:shadow-sm active:scale-[0.98] text-muted-foreground hover:text-[#7B63FF] font-medium relative"
+        class="group flex items-center gap-4 py-3 px-3 rounded-xl transition-all duration-300 hover:bg-primary/10 hover:shadow-sm active:scale-[0.98] text-muted-foreground hover:text-primary font-medium relative"
         active-class="bg-primary/10 text-primary shadow-sm"
       >
         <div class="relative">
           <div
-            class="p-2 rounded-xl bg-muted group-hover:bg-[#7B63FF]  group-[.router-link-active]:bg-primary transition-all duration-300"
+            class="p-2 rounded-xl bg-muted group-hover:bg-primary group-[.router-link-active]:bg-primary transition-all duration-300"
           >
             <component
               :is="item.icon"
-              class="w-5 h-5 text-muted-foreground group-hover:text-white  group-[.router-link-active]:text-primary transition-colors duration-300"
+              class="w-5 h-5 text-muted-foreground group-hover:text-white group-[.router-link-active]:text-white transition-colors duration-300"
             />
           </div>
           <div
@@ -64,7 +65,7 @@ const isCollapsed = ref(false);
           v-if="!isCollapsed"
           class="text-xs text-muted-foreground font-medium"
         >
-          © 2025 SyncPad
+          © {{ currentYear }} SyncPad
         </p>
         <p v-if="!isCollapsed" class="text-xs text-muted-foreground mt-1">
           v1.0.0
