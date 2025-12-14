@@ -21,7 +21,7 @@
         type="password"
       />
       <Button variant="default" class="w-full text-base"
-        ><div class="flex gap-2">
+        ><div class="flex gap-2 justify-center items-center">
           <span>{{ isPending ? "Submitting..." : "Login" }}</span>
           <Loader v-if="isPending" class="animate-spin" /></div
       ></Button>
@@ -41,28 +41,13 @@ import { Form } from "vee-validate";
 import { loginSchema, type LoginSchemaType } from "@/validation/schema";
 import CustomInput from "@/components/custom/CustomInput.vue";
 import Button from "@/components/ui/button/Button.vue";
-import { useLogin } from "@/api/mutations";
+import { useLogin } from "@/composables/useAuth";
 import { Loader } from "lucide-vue-next";
-import type { CreateToasterReturn } from "@ark-ui/vue";
-import { inject } from "vue";
-import { showErrorToaster } from "@/lib/helper";
 
 const { mutate, isPending } = useLogin();
-const toaster = inject<CreateToasterReturn>("toaster")!;
 
 const onSubmit = (values: unknown) => {
   const typedValues = values as LoginSchemaType;
-  // console.log("Form Submitted:", typedValues);
-  mutate(typedValues, {
-    onSuccess: (response?) => {
-      toaster.success({
-        title: "Success!",
-        description: response?.message,
-      });
-    },
-    onError: (error: any) => {
-      showErrorToaster(error, toaster);
-    },
-  });
+  mutate(typedValues);
 };
 </script>

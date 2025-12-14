@@ -16,7 +16,7 @@
       <CustomInput name="email" label="" placeholder="Email" />
       <CustomInput name="password" label="" placeholder=" Password" />
       <Button variant="default" class="w-full text-base">
-        <div class="flex gap-2">
+        <div class="flex gap-2 justify-center items-center">
           <span>{{ isPending ? "Submitting..." : "Sign Up" }}</span>
           <Loader v-if="isPending" class="animate-spin" />
         </div>
@@ -36,30 +36,13 @@ import { Form } from "vee-validate";
 import { registerSchema, type RegisterSchemaType } from "@/validation/schema";
 import CustomInput from "@/components/custom/CustomInput.vue";
 import Button from "@/components/ui/button/Button.vue";
-import { useRegister } from "@/api/mutations";
-import type { CreateToasterReturn } from "@ark-ui/vue";
-import { inject } from "vue";
-import { useRouter } from "vue-router";
-import { showErrorToaster } from "@/lib/helper";
+import { useRegister } from "@/composables/useAuth";
+import { Loader } from "lucide-vue-next";
 
 const { mutate, isPending } = useRegister();
-const toaster = inject<CreateToasterReturn>("toaster")!;
-const router = useRouter();
 
 const onSubmit = (values: unknown) => {
   const typedValues = values as RegisterSchemaType;
-  // console.log("Form Submitted:", typedValues);
-  mutate(typedValues, {
-    onSuccess: (response?) => {
-      (toaster.success({
-        title: "Success!",
-        description: response?.message,
-      }),
-        router.push("/auth/login"));
-    },
-    onError: (error: any) => {
-      showErrorToaster(error, toaster);
-    },
-  });
+  mutate(typedValues);
 };
 </script>

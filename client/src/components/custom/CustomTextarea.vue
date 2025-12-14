@@ -25,7 +25,7 @@
     </Field>
 
     <!-- Error message -->
-    <ErrorMessage :name="name" class="mt-1 text-sm text-red-500" />
+    <ErrorMessage :name="name" class="mt-1 text-xs text-red-500" />
   </div>
 </template>
 

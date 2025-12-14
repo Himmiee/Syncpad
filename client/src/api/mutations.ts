@@ -1,11 +1,10 @@
-// mutations/auth.ts
 import { useMutation } from "@tanstack/vue-query";
 import type {
   LoginPayload,
   RegisterPayload,
   AuthResponse,
 } from "../interface/auth.interface";
-import { api } from "./axios";
+import api from "@/lib/axios";
 import type { AxiosError } from "axios";
 
 interface ApiError {

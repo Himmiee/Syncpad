@@ -3,6 +3,7 @@ import { authApi, type LoginData, type RegisterData } from '@/services/api/auth.
 import { useAuthStore } from '@/stores/auth.store';
 import { useRouter } from 'vue-router';
 import { useToast } from './useToast';
+import { getErrorMessage } from '@/lib/helper';
 
 /**
  * Login mutation hook
@@ -28,7 +29,7 @@ export function useLogin() {
       console.error('Login failed:', error);
       toast.error(
         'Login failed',
-        error.response?.data?.message || 'Invalid email or password'
+        getErrorMessage(error, 'Invalid email or password')
       );
     },
   });
@@ -58,7 +59,7 @@ export function useRegister() {
       console.error('Registration failed:', error);
       toast.error(
         'Registration failed',
-        error.response?.data?.message || 'Could not create account. Please try again.'
+        getErrorMessage(error, 'Could not create account. Please try again.')
       );
     },
   });
