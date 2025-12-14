@@ -3,7 +3,13 @@ import { Notes } from "../../types/notes";
 import { findUserById } from "../user/user.service";
 import { CollaboratorRole } from "@/generated/prisma";
 
-// Get all user notes with pagination
+/**
+ * Get all user notes with pagination support
+ * @param id - User ID
+ * @param skip - Number of records to skip for pagination
+ * @param take - Number of records to take for pagination
+ * @returns Object containing notes array and total count
+ */
 export const getUserNotes = async (
   id: number,
   skip?: number,
@@ -24,7 +30,12 @@ export const getUserNotes = async (
   return { notes, total };
 };
 
-// Create user note
+/**
+ * Create a new note for a user
+ * @param data - Note data including title, content, and ownerId
+ * @returns Created note
+ * @throws Error if user not found
+ */
 export const createUserNote = async (data: Notes) => {
   const user = await findUserById(data.ownerId);
   if (!user) throw new Error("User not found");
@@ -38,7 +49,11 @@ export const createUserNote = async (data: Notes) => {
   });
 };
 
-// Get a single note by its ID
+/**
+ * Get a single note by its ID with owner and collaborators
+ * @param id - Note ID
+ * @returns Note with owner and collaborator details or null
+ */
 export const getNoteById = async (id: number) => {
   return await prisma.note.findUnique({
     where: { id },
@@ -59,7 +74,14 @@ export const getNoteById = async (id: number) => {
   });
 };
 
-// Update a user note
+/**
+ * Update a note's title or content
+ * @param id - Note ID
+ * @param ownerId - Owner's user ID for authorization
+ * @param data - Partial note data to update
+ * @returns Updated note
+ * @throws Error if note not found or not authorized
+ */
 export const updateNoteWithId = async (
   id: number,
   ownerId: number,
@@ -82,7 +104,13 @@ export const updateNoteWithId = async (
   });
 };
 
-// Delete user note
+/**
+ * Delete a note
+ * @param id - Note ID
+ * @param ownerId - Owner's user ID for authorization
+ * @returns Deleted note
+ * @throws Error if note not found or not authorized
+ */
 export const deleteNoteWithId = async (id: number, ownerId: number) => {
   const note = await prisma.note.findUnique({
     where: { id },
@@ -96,7 +124,14 @@ export const deleteNoteWithId = async (id: number, ownerId: number) => {
   });
 };
 
-//Add Collaborator to note
+/**
+ * Add a collaborator to a note
+ * @param noteId - Note ID
+ * @param userId - User ID to add as collaborator
+ * @param role - Collaborator role (VIEWER or EDITOR)
+ * @returns Created collaborator
+ * @throws Error if note/user not found or user already a collaborator
+ */
 export const addCollaborator = async (
   noteId: number,
   userId: number,
@@ -128,6 +163,12 @@ export const addCollaborator = async (
   });
 };
 
+/**
+ * Get all collaborators for a note
+ * @param noteId - Note ID
+ * @returns Array of collaborators with user details
+ * @throws Error if note not found
+ */
 export const getNoteCollaborators = async (noteId: number) => {
   const note = await prisma.note.findUnique({
     where: { id: noteId },
@@ -150,6 +191,14 @@ export const getNoteCollaborators = async (noteId: number) => {
   return collaborators;
 };
 
+/**
+ * Update a collaborator's role
+ * @param noteId - Note ID
+ * @param collabId - Collaborator ID
+ * @param role - New role (VIEWER or EDITOR)
+ * @returns Updated collaborator
+ * @throws Error if note or collaborator not found
+ */
 export const updateCollaboratorRole = async (
   noteId: number,
   collabId: number,
@@ -172,6 +221,13 @@ export const updateCollaboratorRole = async (
   });
 };
 
+/**
+ * Remove a collaborator from a note
+ * @param noteId - Note ID
+ * @param collabId - Collaborator ID to remove
+ * @returns Success message
+ * @throws Error if note or collaborator not found
+ */
 export const removeCollaborator = async (noteId: number, collabId: number) => {
   const note = await prisma.note.findUnique({
     where: { id: noteId },

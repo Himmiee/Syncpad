@@ -1,18 +1,17 @@
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
-import { NextFunction, Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { ZodError } from "zod";
-import { logger } from "../utils/logger";
-
-const isDevelopment = process.env.NODE_ENV !== "production";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { logger } from "@/utils/logger";
+import { AppError } from "@/utils/error-classes";
 
 export const ErrorHandler = (
-  err: any,
+  err: Error,
   req: Request,
   res: Response,
-  _next: NextFunction
+  next: NextFunction
 ) => {
-  // Log error with full context
-  const errorContext = {
+  // Log error with context
+  logger.error("Error occurred:", {
     method: req.method,
     url: req.url,
     userId: req.userId || "anonymous",
@@ -20,63 +19,87 @@ export const ErrorHandler = (
     userAgent: req.get("user-agent"),
     error: err.message,
     stack: err.stack,
-  };
+  });
 
-  logger.error(`Error occurred: ${err.message}`, errorContext);
+  // Handle custom AppError instances
+  if (err instanceof AppError) {
+    return res.status(err.statusCode).json({
+      success: false,
+      error: {
+        code: err.code,
+        message: err.message,
+        statusCode: err.statusCode,
+      },
+    });
+  }
 
   // Handle Zod validation errors
   if (err instanceof ZodError) {
+    const errors = err.issues.map((issue) => ({
+      field: issue.path.join("."),
+      message: issue.message,
+    }));
+
     return res.status(400).json({
       success: false,
-      error: "Validation failed",
-      details: err.issues.map((issue) => ({
-        path: issue.path.join("."),
-        message: issue.message,
-      })),
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Validation failed",
+        statusCode: 400,
+        details: errors,
+      },
     });
   }
 
   // Handle Prisma errors
   if (err instanceof PrismaClientKnownRequestError) {
-    let message = "Database error";
-    let statusCode = 500;
-
-    // Handle specific Prisma error codes
-    switch (err.code) {
-      case "P2002":
-        message = "A record with this value already exists";
-        statusCode = 409;
-        break;
-      case "P2025":
-        message = "Record not found";
-        statusCode = 404;
-        break;
-      case "P2003":
-        message = "Foreign key constraint failed";
-        statusCode = 400;
-        break;
+    // Unique constraint violation
+    if (err.code === "P2002") {
+      return res.status(409).json({
+        success: false,
+        error: {
+          code: "CONFLICT",
+          message: "A record with this value already exists",
+          statusCode: 409,
+        },
+      });
     }
 
-    return res.status(statusCode).json({
-      success: false,
-      error: message,
-      ...(isDevelopment && { details: err.message }),
-    });
+    // Record not found
+    if (err.code === "P2025") {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: "NOT_FOUND",
+          message: "Record not found",
+          statusCode: 404,
+        },
+      });
+    }
+
+    // Foreign key constraint failed
+    if (err.code === "P2003") {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: "INVALID_REFERENCE",
+          message: "Invalid reference to related record",
+          statusCode: 400,
+        },
+      });
+    }
   }
 
-  // Handle custom errors with statusCode
-  if (err.statusCode) {
-    return res.status(err.statusCode).json({
-      success: false,
-      error: err.message || "An error occurred",
-      ...(isDevelopment && { stack: err.stack }),
-    });
-  }
-
-  // Generic error handler
-  res.status(500).json({
+  // Default error response for unexpected errors
+  const statusCode = 500;
+  res.status(statusCode).json({
     success: false,
-    error: isDevelopment ? err.message : "Internal server error",
-    ...(isDevelopment && { stack: err.stack }),
+    error: {
+      code: "INTERNAL_SERVER_ERROR",
+      message: process.env.NODE_ENV === "production" 
+        ? "An unexpected error occurred" 
+        : err.message,
+      statusCode,
+    },
   });
 };
