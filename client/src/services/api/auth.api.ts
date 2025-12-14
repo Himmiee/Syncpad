@@ -61,7 +61,7 @@ export const authApi = {
   },
 
   /**
-   * Get current user (if you have this endpoint)
+   * Get current user 
    */
   getCurrentUser: async () => {
     const response = await api.get('/users/me');

@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/vue-query';
 import { authApi, type LoginData, type RegisterData } from '@/services/api/auth.api';
 import { useAuthStore } from '@/stores/auth.store';
 import { useRouter } from 'vue-router';
+import { useToast } from './useToast';
 
 /**
  * Login mutation hook
@@ -9,6 +10,7 @@ import { useRouter } from 'vue-router';
 export function useLogin() {
   const authStore = useAuthStore();
   const router = useRouter();
+  const toast = useToast();
 
   return useMutation({
     mutationFn: (data: LoginData) => authApi.login(data),
@@ -16,12 +18,18 @@ export function useLogin() {
       // Save user and tokens to store
       authStore.login(data.user, data.accessToken, data.refreshToken);
       
+      // Show success message
+      toast.success('Welcome back!', `Logged in as ${data.user.username}`);
+      
       // Redirect to home/notes page
       router.push('/notes');
     },
     onError: (error: any) => {
       console.error('Login failed:', error);
-      // You can add toast notification here
+      toast.error(
+        'Login failed',
+        error.response?.data?.message || 'Invalid email or password'
+      );
     },
   });
 }
@@ -32,6 +40,7 @@ export function useLogin() {
 export function useRegister() {
   const authStore = useAuthStore();
   const router = useRouter();
+  const toast = useToast();
 
   return useMutation({
     mutationFn: (data: RegisterData) => authApi.register(data),
@@ -39,12 +48,18 @@ export function useRegister() {
       // Save user and tokens to store
       authStore.login(data.user, data.accessToken, data.refreshToken);
       
+      // Show success message
+      toast.success('Account created!', `Welcome to SyncPad, ${data.user.username}!`);
+      
       // Redirect to home/notes page
       router.push('/notes');
     },
     onError: (error: any) => {
       console.error('Registration failed:', error);
-      // You can add toast notification here
+      toast.error(
+        'Registration failed',
+        error.response?.data?.message || 'Could not create account. Please try again.'
+      );
     },
   });
 }
@@ -55,6 +70,7 @@ export function useRegister() {
 export function useLogout() {
   const authStore = useAuthStore();
   const router = useRouter();
+  const toast = useToast();
 
   return useMutation({
     mutationFn: async () => {
@@ -66,8 +82,12 @@ export function useLogout() {
       // Clear auth store
       authStore.logout();
       
+      // Show success message
+      toast.info('Logged out', 'See you next time!');
+      
       // Redirect to login
       router.push('/auth/login');
     },
   });
 }
+
