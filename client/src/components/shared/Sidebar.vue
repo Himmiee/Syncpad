@@ -36,15 +36,15 @@ const currentYear = new Date().getFullYear();
         v-for="item in navItems"
         :key="item.to"
         :to="item.to"
-        class="group flex items-center gap-4 py-3 px-3 rounded-xl transition-all duration-300 hover:bg-[#7B63FF]/10 hover:shadow-sm active:scale-[0.98] text-muted-foreground hover:text-[#7B63FF] font-medium relative"
-        active-class="bg-[#7B63FF]/10 text-[#7B63FF] shadow-sm"
+        class="group flex items-center gap-4 py-3 px-3 rounded-xl transition-all duration-300 hover:bg-primary-10 hover:shadow-sm active:scale-[0.98] text-muted-foreground hover:text-primary-purple font-medium relative"
+        active-class="bg-primary-10 text-primary-purple shadow-sm"
       >
         <div class="relative">
           <div
             :class="[
               'p-2 rounded-xl transition-all duration-300',
-              'bg-muted group-hover:bg-[#7B63FF]',
-              item.to === $route.path ? 'bg-[#7B63FF] shadow-lg shadow-[#7B63FF]/30' : ''
+              'bg-muted group-hover:bg-primary',
+              item.to === $route.path ? 'bg-primary shadow-primary-glow' : ''
             ]"
           >
             <component
@@ -58,7 +58,7 @@ const currentYear = new Date().getFullYear();
           </div>
           <div
             :class="[
-              'absolute -top-1 -right-1 w-3 h-3 bg-[#7B63FF] rounded-full transition-opacity duration-300 shadow-lg',
+              'absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full transition-opacity duration-300 shadow-lg',
               item.to === $route.path ? 'opacity-100' : 'opacity-0'
             ]"
           ></div>
@@ -66,7 +66,7 @@ const currentYear = new Date().getFullYear();
         <span v-if="!isCollapsed" :class="['font-medium', item.to === $route.path ? 'font-bold' : '']">{{ item.label }}</span>
         <div
           :class="[
-            'absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#7B63FF] rounded-r-full transition-opacity duration-300',
+            'absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r-full transition-opacity duration-300',
             item.to === $route.path ? 'opacity-100' : 'opacity-0'
           ]"
         ></div>
