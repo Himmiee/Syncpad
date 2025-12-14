@@ -95,6 +95,33 @@ export const ListUsers = async (
   }
 };
 
+// Get current logged-in user
+export const GetCurrentUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.userId;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const user = await userService.getUserProfile(Number(userId));
+    
+    res.status(200).json({
+      success: true,
+      data: user,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // refresh token
 export const RefreshToken = async (
   req: Request,
@@ -123,3 +150,4 @@ export const RefreshToken = async (
     next(err);
   }
 };
+
