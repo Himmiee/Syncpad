@@ -1,6 +1,7 @@
 import express from "express";
 import * as userControllers from "./user.controller";
 import { upload } from "@/config/upload";
+import { AuthMiddleware } from "@/middleware/authMiddleware";
 
 const router = express.Router();
 
@@ -32,5 +33,11 @@ router.get("/", userControllers.ListUsers);
  */
 router.post("/refresh", userControllers.RefreshToken);
 
+/**
+ * @route   GET /users/me
+ * @desc    Get current logged-in user details
+ * @access  Private
+ */
+router.get("/me", AuthMiddleware, userControllers.GetCurrentUser);
 
 export default router;

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
+import { authApi } from '@/services/api/auth.api';
 
 interface User {
   id: string;
@@ -52,6 +53,21 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function fetchCurrentUser() {
+    try {
+      if (!accessToken.value) return;
+      const response = await authApi.getCurrentUser();
+      // The API returns { success: true, data: user }
+      if (response.data) {
+        setUser(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch user:', error);
+      // Optional: logout if token is invalid
+      // logout();
+    }
+  }
+
   return {
     // State
     user,
@@ -66,5 +82,6 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     logout,
     updateUser,
+    fetchCurrentUser,
   };
 });
