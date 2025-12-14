@@ -80,6 +80,7 @@
 @layer utilities {
   .bg-primary { background-color: var(--primary); }
   .bg-primary-hover { background-color: var(--color-primary-hover); }
+  .bg-primary-10 { background-color: rgba(123, 99, 255, 0.1); }
   .bg-accent { background-color: var(--accent); }
   .bg-accent-hover { background-color: var(--color-accent-hover); }
   .bg-background { background-color: var(--background); }
@@ -89,6 +90,7 @@
   .bg-destructive { background-color: var(--destructive); }
 
   .text-primary { color: var(--primary); }
+  .text-primary-purple { color: #7B63FF !important; }
   .text-foreground { color: var(--foreground); }
   .text-muted { color: var(--muted-foreground); }
   .text-primary-foreground { color: var(--primary-foreground); }
@@ -108,6 +110,13 @@
 
   .hover\:bg-primary-hover:hover { background-color: var(--color-primary-hover); }
   .hover\:bg-accent-hover:hover { background-color: var(--color-accent-hover); }
+  .hover\:bg-primary-10:hover { background-color: rgba(123, 99, 255, 0.1); }
+  .hover\:text-primary-purple:hover { color: #7B63FF; }
+  
+  .group:hover .group-hover\:bg-primary { background-color: var(--primary); }
+  .group:hover .group-hover\:text-white { color: white; }
   
   .ring-ring { --tw-ring-color: var(--ring); }
+  
+  .shadow-primary-glow { box-shadow: 0 10px 15px -3px rgba(123, 99, 255, 0.3), 0 4px 6px -4px rgba(123, 99, 255, 0.3); }
 }

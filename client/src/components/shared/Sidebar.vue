@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight } from "lucide-vue-next";
 import { navItems } from "@/data/data";
 
 const isCollapsed = ref(false);
+const currentYear = new Date().getFullYear();
 </script>
 
 <template>
@@ -35,25 +36,39 @@ const isCollapsed = ref(false);
         v-for="item in navItems"
         :key="item.to"
         :to="item.to"
-        class="group flex items-center gap-4 py-3 px-3 rounded-xl transition-all duration-300 hover:bg-[#7B63FF]/10 hover:shadow-sm active:scale-[0.98] text-muted-foreground hover:text-[#7B63FF] font-medium relative"
-        active-class="bg-primary/10 text-primary shadow-sm"
+        class="group flex items-center gap-4 py-3 px-3 rounded-xl transition-all duration-300 hover:bg-primary-10 hover:shadow-sm active:scale-[0.98] text-muted-foreground hover:text-primary-purple font-medium relative"
+        active-class="bg-primary-10 text-primary-purple shadow-sm"
       >
         <div class="relative">
           <div
-            class="p-2 rounded-xl bg-muted group-hover:bg-[#7B63FF]  group-[.router-link-active]:bg-primary transition-all duration-300"
+            :class="[
+              'p-2 rounded-xl transition-all duration-300',
+              'bg-muted group-hover:bg-primary',
+              item.to === $route.path ? 'bg-primary shadow-primary-glow' : ''
+            ]"
           >
             <component
               :is="item.icon"
-              class="w-5 h-5 text-muted-foreground group-hover:text-white  group-[.router-link-active]:text-primary transition-colors duration-300"
+              :class="[
+                'w-5 h-5 transition-colors duration-300',
+                'text-muted-foreground group-hover:text-white',
+                item.to === $route.path ? 'text-white' : ''
+              ]"
             />
           </div>
           <div
-            class="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full opacity-0 group-[.router-link-active]:opacity-100 transition-opacity duration-300 shadow-lg"
+            :class="[
+              'absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full transition-opacity duration-300 shadow-lg',
+              item.to === $route.path ? 'opacity-100' : 'opacity-0'
+            ]"
           ></div>
         </div>
-        <span v-if="!isCollapsed" class="font-medium">{{ item.label }}</span>
+        <span v-if="!isCollapsed" :class="['font-medium', item.to === $route.path ? 'font-bold' : '']">{{ item.label }}</span>
         <div
-          class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r-full opacity-0 group-[.router-link-active]:opacity-100 transition-opacity duration-300"
+          :class="[
+            'absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r-full transition-opacity duration-300',
+            item.to === $route.path ? 'opacity-100' : 'opacity-0'
+          ]"
         ></div>
       </RouterLink>
     </nav>
@@ -64,7 +79,7 @@ const isCollapsed = ref(false);
           v-if="!isCollapsed"
           class="text-xs text-muted-foreground font-medium"
         >
-          © 2025 SyncPad
+          © {{ currentYear }} SyncPad
         </p>
         <p v-if="!isCollapsed" class="text-xs text-muted-foreground mt-1">
           v1.0.0
