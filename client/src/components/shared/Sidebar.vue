@@ -1,11 +1,24 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import logo from "../../assets/logo/syncpad-logo.svg";
-import { ChevronLeft, ChevronRight } from "lucide-vue-next";
+import { ChevronLeft, ChevronRight, LogOut, Loader } from "lucide-vue-next";
 import { navItems } from "@/data/data";
+import { useLogout } from "@/composables/useAuth";
 
 const isCollapsed = ref(false);
 const currentYear = new Date().getFullYear();
+const isLoggingOut = ref(false);
+
+const { mutate: logout } = useLogout();
+
+const handleLogout = async () => {
+  isLoggingOut.value = true;
+  
+  // Simulated delay for better UX
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  
+  logout();
+};
 </script>
 
 <template>
@@ -73,6 +86,20 @@ const currentYear = new Date().getFullYear();
       </RouterLink>
     </nav>
 
+    <!-- Logout Button -->
+    <div class="p-2">
+      <button
+        @click="handleLogout"
+        :disabled="isLoggingOut"
+        class="group w-full flex items-center gap-4 py-3 px-3 rounded-xl transition-all duration-300 hover:bg-red-50 active:scale-[0.98] text-muted-foreground hover:text-red-600 font-medium"
+      >
+        <div class="p-2 rounded-xl transition-all duration-300 bg-muted group-hover:bg-red-500">
+          <LogOut class="w-5 h-5 transition-colors duration-300 text-muted-foreground group-hover:text-white" />
+        </div>
+        <span v-if="!isCollapsed" class="font-medium">Logout</span>
+      </button>
+    </div>
+
     <div class="p-4 border-t border-border">
       <div class="text-center">
         <p
@@ -87,4 +114,40 @@ const currentYear = new Date().getFullYear();
       </div>
     </div>
   </aside>
+
+  <!-- Logging Out Modal -->
+  <Teleport to="body">
+    <Transition name="fade">
+      <div
+        v-if="isLoggingOut"
+        class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center"
+      >
+        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center">
+          <div class="flex justify-center mb-4">
+            <div class="p-4 bg-primary/10 rounded-full">
+              <Loader class="w-8 h-8 text-primary animate-spin" />
+            </div>
+          </div>
+          <h3 class="text-xl font-semibold text-gray-900 mb-2">
+            Logging out...
+          </h3>
+          <p class="text-gray-500 text-sm">
+            Please wait while we securely log you out
+          </p>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
 </template>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

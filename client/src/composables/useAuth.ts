@@ -22,8 +22,9 @@ export function useLogin() {
       // Show success message
       toast.success('Welcome back!', `Logged in as ${data.user.username}`);
       
-      // Redirect to home/notes page
-      router.push('/notes');
+      // Redirect to original page or home
+      const redirect = router.currentRoute.value.query.redirect as string;
+      router.push(redirect || '/dashboard/notes');
     },
     onError: (error: any) => {
       console.error('Login failed:', error);
@@ -53,7 +54,7 @@ export function useRegister() {
       toast.success('Account created!', `Welcome to SyncPad, ${data.user.username}!`);
       
       // Redirect to home/notes page
-      router.push('/notes');
+      router.push('/dashboard/notes');
     },
     onError: (error: any) => {
       console.error('Registration failed:', error);
