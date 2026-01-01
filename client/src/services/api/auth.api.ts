@@ -41,7 +41,13 @@ export const authApi = {
         'Content-Type': 'multipart/form-data',
       },
     });
-    return response.data;
+    
+    const apiData = response.data;
+    return {
+      user: apiData.data,
+      accessToken: apiData.token,
+      refreshToken: apiData.token, 
+    };
   },
 
   /**
@@ -49,7 +55,13 @@ export const authApi = {
    */
   login: async (data: LoginData): Promise<AuthResponse> => {
     const response = await api.post('/users/login', data);
-    return response.data;
+    
+    const apiData = response.data;
+    return {
+      user: apiData.data,
+      accessToken: apiData.token,
+      refreshToken: apiData.token, 
+    };
   },
 
   /**
