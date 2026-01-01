@@ -10,20 +10,38 @@ import { CollaboratorRole } from "@/generated/prisma";
  * @param take - Number of records to take for pagination
  * @returns Object containing notes array and total count
  */
+/**
+ * Get all user notes with pagination support
+ * @param id - User ID
+ * @param skip - Number of records to skip for pagination
+ * @param take - Number of records to take for pagination
+ * @param search - Search query to filter notes (title or content)
+ * @returns Object containing notes array and total count
+ */
 export const getUserNotes = async (
   id: number,
   skip?: number,
-  take?: number
+  take?: number,
+  search?: string
 ) => {
+  const where: any = { ownerId: id };
+
+  if (search) {
+    where.OR = [
+      { title: { contains: search, mode: 'insensitive' } },
+      { content: { contains: search, mode: 'insensitive' } },
+    ];
+  }
+
   const [notes, total] = await Promise.all([
     prisma.note.findMany({
-      where: { ownerId: id },
+      where,
       orderBy: { id: "desc" },
       ...(skip !== undefined && { skip }),
       ...(take !== undefined && { take }),
     }),
     prisma.note.count({
-      where: { ownerId: id },
+      where,
     }),
   ]);
 

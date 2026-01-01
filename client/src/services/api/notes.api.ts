@@ -63,9 +63,9 @@ export const notesApi = {
   /**
    * Get all notes for the current user (paginated)
    */
-  getAll: async (page = 1, limit = 10): Promise<PaginatedNotesResponse> => {
+  getAll: async (page = 1, limit = 10, search?: string): Promise<PaginatedNotesResponse> => {
     const response = await api.get('/notes/all', {
-      params: { page, limit },
+      params: { page, limit, search },
     });
     return response.data;
   },

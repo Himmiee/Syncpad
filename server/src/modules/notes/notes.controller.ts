@@ -58,9 +58,10 @@ export const GetNotes = async (
 
     // Get pagination parameters from query
     const { page, limit, skip } = getPaginationParams(req);
+    const search = req.query.search as string | undefined;
 
-    // Fetch notes with pagination
-    const { notes, total } = await getUserNotes(Number(userId), skip, limit);
+    // Fetch notes with pagination and search
+    const { notes, total } = await getUserNotes(Number(userId), skip, limit, search);
 
     // Create paginated response
     const response = createPaginatedResponse(notes, total, page, limit);

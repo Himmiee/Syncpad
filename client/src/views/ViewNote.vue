@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onBeforeUnmount } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router';
 import { useEditor, EditorContent } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
@@ -43,9 +43,15 @@ const note = computed(() => data.value?.note);
 // Form state
 const title = ref('');
 const hasUnsavedChanges = ref(false);
+const originalContent = ref<any>(null);
+const originalTitle = ref('');
 
 // Delete modal state
 const isDeleteModalOpen = ref(false);
+
+// Unsaved changes modal state
+const isUnsavedModalOpen = ref(false);
+const pendingNavigation = ref<(() => void) | null>(null);
 
 // Mutations
 const { mutate: updateNote, isPending: isUpdating } = useUpdateNote();
@@ -64,14 +70,22 @@ const editor = useEditor({
   },
 });
 
+const isInitialized = ref(false);
+
 // Watch for note data and update form
 watch(
-  () => note.value,
-  (noteData) => {
-    if (noteData && editor.value) {
+  [() => note.value, editor],
+  ([noteData, editorInstance]) => {
+    if (noteData && editorInstance && !isInitialized.value) {
       title.value = noteData.title;
-      editor.value.commands.setContent(noteData.content || '');
+      originalTitle.value = noteData.title;
+      originalContent.value = noteData.content || '';
+      
+      // Set content without emitting update to prevent unsaved changes flag
+      editorInstance.commands.setContent(noteData.content || '', { emitUpdate: false });
+      
       hasUnsavedChanges.value = false;
+      isInitialized.value = true;
     }
   },
   { immediate: true }
@@ -79,24 +93,48 @@ watch(
 
 // Watch title changes
 watch(title, () => {
-  if (note.value && title.value !== note.value.title) {
+  // Only mark as unsaved if initialized (prevents initial load triggering it)
+  if (isInitialized.value && note.value && title.value !== note.value.title) {
     hasUnsavedChanges.value = true;
   }
 });
 
-// Navigation guard - warn before leaving with unsaved changes
-onBeforeRouteLeave((to, from, next) => {
+// Navigation guard - show modal before leaving with unsaved changes
+onBeforeRouteLeave((_to, _from, next) => {
   if (hasUnsavedChanges.value) {
-    const confirmLeave = window.confirm(
-      'You have unsaved changes. Are you sure you want to leave?'
-    );
-    if (!confirmLeave) {
-      next(false);
-      return;
-    }
+    isUnsavedModalOpen.value = true;
+    pendingNavigation.value = () => {
+      hasUnsavedChanges.value = false; // Reset to allow navigation
+      next();
+    };
+    next(false); // Prevent navigation for now
+    return;
   }
   next();
 });
+
+// Discard changes and continue navigation
+const discardChanges = () => {
+  // Reset to original values
+  if (editor.value && originalContent.value !== null) {
+    editor.value.commands.setContent(originalContent.value);
+  }
+  title.value = originalTitle.value;
+  hasUnsavedChanges.value = false;
+  isUnsavedModalOpen.value = false;
+  
+  // Continue with pending navigation
+  if (pendingNavigation.value) {
+    pendingNavigation.value();
+    pendingNavigation.value = null;
+  }
+};
+
+// Cancel leaving - stay on page
+const cancelLeave = () => {
+  isUnsavedModalOpen.value = false;
+  pendingNavigation.value = null;
+};
 
 // Handlers
 const handleBack = () => {
@@ -117,6 +155,9 @@ const handleSave = () => {
     {
       onSuccess: () => {
         hasUnsavedChanges.value = false;
+        // Update originals after save
+        originalTitle.value = title.value.trim();
+        originalContent.value = editor.value?.getJSON();
       },
     }
   );
@@ -127,6 +168,7 @@ const handleDelete = () => {
 };
 
 const handleNoteDeleted = () => {
+  hasUnsavedChanges.value = false; // Prevent unsaved modal on delete
   router.push('/dashboard/notes');
 };
 
@@ -365,6 +407,45 @@ const isActive = (type: string, attrs?: Record<string, any>) => {
       @close="isDeleteModalOpen = false"
       @deleted="handleNoteDeleted"
     />
+
+    <!-- Unsaved Changes Modal -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div
+          v-if="isUnsavedModalOpen"
+          class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center"
+        >
+          <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="p-3 bg-amber-100 rounded-full">
+                <Save class="w-6 h-6 text-amber-600" />
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold text-gray-900">
+                  Unsaved Changes
+                </h3>
+                <p class="text-sm text-gray-500">
+                  You have unsaved changes that will be lost.
+                </p>
+              </div>
+            </div>
+            
+            <p class="text-gray-600 mb-6">
+              Do you want to save your changes before leaving?
+            </p>
+            
+            <div class="flex gap-3 justify-end">
+              <Button variant="ghost" @click="discardChanges">
+                Discard
+              </Button>
+              <Button variant="secondary" @click="cancelLeave">
+                Continue Editing
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -440,5 +521,16 @@ const isActive = (type: string, attrs?: Record<string, any>) => {
   border-radius: 0.25rem;
   font-size: 0.875rem;
   color: #111827;
+}
+
+/* Modal transitions */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

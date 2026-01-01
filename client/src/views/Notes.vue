@@ -21,23 +21,15 @@ const noteToDelete = ref<Note | null>(null);
 const page = ref(1);
 const limit = ref(20);
 
-// Fetch notes
-const { data, isLoading, isError, error } = useNotes(page, limit);
+// Fetch notes with search
+const { data, isLoading, isError, error } = useNotes(page, limit, searchQuery);
 
 // Computed
 const notes = computed(() => data.value?.data || []);
 const pagination = computed(() => data.value?.pagination);
 
-// Filter notes by search query
-const filteredNotes = computed(() => {
-  if (!searchQuery.value.trim()) return notes.value;
-  const query = searchQuery.value.toLowerCase();
-  return notes.value.filter(
-    (note) =>
-      note.title.toLowerCase().includes(query) ||
-      (typeof note.content === 'string' && note.content.toLowerCase().includes(query))
-  );
-});
+// Use notes directly since search is handled by backend
+const filteredNotes = computed(() => notes.value);
 
 // Handlers
 const handleSelectNote = (note: Note) => {
@@ -186,7 +178,7 @@ const handleClosePreview = () => {
 
     <!-- Preview Panel -->
     <div
-      class="w-full lg:w-1/3 mt-6 lg:mt-0 p-6 lg:p-8 border-t lg:border-t-0 lg:border-l border-gray-200 flex flex-col"
+      class="hidden lg:flex w-full lg:w-1/3 mt-6 lg:mt-0 p-6 lg:p-8 border-t lg:border-t-0 lg:border-l border-gray-200 flex-col"
     >
       <NotePreview
         :note="selectedNote"

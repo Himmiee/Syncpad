@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
+import { useMutation, useQuery, useQueryClient, keepPreviousData } from '@tanstack/vue-query';
 import { notesApi, type CreateNoteData, type UpdateNoteData } from '@/services/api/notes.api';
 import { useToast } from './useToast';
 import { getErrorMessage } from '@/lib/helper';
@@ -8,18 +8,20 @@ import { ref, computed } from 'vue';
 export const noteKeys = {
   all: ['notes'] as const,
   lists: () => [...noteKeys.all, 'list'] as const,
-  list: (page: number, limit: number) => [...noteKeys.lists(), { page, limit }] as const,
+  list: (page: number, limit: number, search?: string) => [...noteKeys.lists(), { page, limit, search }] as const,
   details: () => [...noteKeys.all, 'detail'] as const,
   detail: (id: number) => [...noteKeys.details(), id] as const,
 };
 
 /**
- * Fetch all notes with pagination
+ * Fetch all notes with pagination and search
  */
-export function useNotes(page = ref(1), limit = ref(10)) {
+export function useNotes(page = ref(1), limit = ref(10), search = ref('')) {
   return useQuery({
-    queryKey: computed(() => noteKeys.list(page.value, limit.value)),
-    queryFn: () => notesApi.getAll(page.value, limit.value),
+    queryKey: computed(() => noteKeys.list(page.value, limit.value, search.value)),
+    queryFn: () => notesApi.getAll(page.value, limit.value, search.value),
+    staleTime: 1000 * 60 * 5, // 5 minutes cache
+    placeholderData: keepPreviousData, // Keep previous data while fetching new page
   });
 }
 
@@ -31,6 +33,7 @@ export function useNote(id: number) {
     queryKey: noteKeys.detail(id),
     queryFn: () => notesApi.getById(id),
     enabled: !!id,
+    staleTime: 1000 * 60 * 5, // 5 minutes cache
   });
 }
 
