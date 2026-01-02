@@ -211,7 +211,7 @@ const isActive = (type: string, attrs?: Record<string, any>) => {
 <template>
   <div class="flex flex-col h-full bg-white text-black">
     <!-- Top Bar -->
-    <div class="flex items-center justify-between p-4 border-b border-gray-200">
+    <div class="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50/50">
       <div class="flex items-center gap-3">
         <Button variant="ghost" size="sm" @click="handleBack" class="lg:hidden">
           <ArrowLeft class="w-4 h-4 mr-2 text-gray-700" />

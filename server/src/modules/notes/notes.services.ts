@@ -27,10 +27,7 @@ export const getUserNotes = async (
   const where: any = { ownerId: id };
 
   if (search) {
-    where.OR = [
-      { title: { contains: search, mode: 'insensitive' } },
-      { content: { contains: search, mode: 'insensitive' } },
-    ];
+    where.title = { contains: search, mode: 'insensitive' };
   }
 
   const [notes, total] = await Promise.all([

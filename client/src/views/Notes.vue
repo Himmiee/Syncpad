@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRouter, useRoute, RouterView } from 'vue-router';
 import Button from '@/components/ui/button/Button.vue';
 import { Plus, Search, Loader, FileText, Inbox } from 'lucide-vue-next';
@@ -10,13 +10,25 @@ import type { Note } from '@/services/api/notes.api';
 const router = useRouter();
 const route = useRoute();
 
+
+
 // State
 const searchQuery = ref('');
+const debouncedSearch = ref('');
 const page = ref(1);
 const limit = ref(20);
 
-// Fetch notes
-const { data, isLoading, isError, error } = useNotes(page, limit, searchQuery);
+// Debounce Search
+let searchTimeout: any;
+watch(searchQuery, (newValue) => {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    debouncedSearch.value = newValue;
+  }, 300); // 300ms debounce
+});
+
+// Fetch notes (use debounced value)
+const { data, isLoading, isError, error } = useNotes(page, limit, debouncedSearch);
 const { mutate: createNote, isPending: isCreating } = useCreateNote();
 
 // Computed
@@ -60,7 +72,7 @@ const handleCreateNote = () => {
       :class="{ 'hidden lg:flex': selectedNoteId }"
     >
       <!-- Header -->
-      <div class="p-4 border-b border-gray-100 space-y-4">
+      <div class="p-4 border-b border-gray-200 space-y-4 bg-gray-50/50">
         <div class="flex items-center justify-between">
           <h1 class="text-xl font-semibold text-gray-900">Notes</h1>
           <Button
@@ -80,7 +92,7 @@ const handleCreateNote = () => {
             v-model="searchQuery"
             type="text"
             placeholder="Search notes..."
-            class="w-full pl-9 pr-4 py-1.5 bg-gray-50 border border-transparent rounded-lg text-sm focus:bg-white focus:border-primary/20 focus:ring-2 focus:ring-primary/10 transition-all outline-none"
+            class="w-full pl-9 pr-4 py-1.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary/20 focus:ring-2 focus:ring-primary/10 transition-all outline-none"
           />
         </div>
       </div>
