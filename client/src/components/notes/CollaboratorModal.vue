@@ -118,7 +118,7 @@ const handleClose = () => {
               <!-- Add User Form -->
               <div class="mb-8">
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Invite by email
+                  Add collaborator by email
                 </label>
                 <div class="flex gap-2">
                   <div class="relative flex-1">
@@ -137,7 +137,7 @@ const handleClose = () => {
                   >
                     <Loader v-if="isAdding" class="w-4 h-4 animate-spin" />
                     <UserPlus v-else class="w-4 h-4" />
-                    <span class="ml-2 hidden sm:inline">Invite</span>
+                    <span class="ml-2 hidden sm:inline">Add</span>
                   </Button>
                 </div>
               </div>

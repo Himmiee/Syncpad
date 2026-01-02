@@ -1,5 +1,6 @@
-import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
+import { defineStore } from 'pinia';
+import { useQueryClient } from '@tanstack/vue-query';
 import { authApi } from '@/services/api/auth.api';
 
 interface User {
@@ -10,6 +11,8 @@ interface User {
 }
 
 export const useAuthStore = defineStore('auth', () => {
+  const queryClient = useQueryClient();
+
   // State
   const user = ref<User | null>(null);
   const accessToken = ref<string | null>(localStorage.getItem('accessToken'));
@@ -45,6 +48,9 @@ export const useAuthStore = defineStore('auth', () => {
     refreshToken.value = null;
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    
+    // Clear all query cache to prevent data leaking between users
+    queryClient.removeQueries();
   }
 
   function updateUser(userData: Partial<User>) {

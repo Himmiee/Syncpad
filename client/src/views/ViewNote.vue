@@ -56,6 +56,16 @@ const isCollaboratorModalOpen = ref(false);
 const authStore = useAuthStore();
 const currentUserId = computed(() => Number(authStore.user?.id));
 
+// Permissions
+const canEdit = computed(() => {
+  if (!note.value || !currentUserId.value) return false;
+  if (note.value.ownerId === currentUserId.value) return true;
+  const collaborator = note.value.collaborators?.find((c: any) => c.userId === currentUserId.value);
+  return collaborator?.role === 'EDITOR';
+});
+
+
+
 // Unsaved changes modal state
 const isUnsavedModalOpen = ref(false);
 const pendingNavigation = ref<(() => void) | null>(null);
@@ -93,6 +103,17 @@ const editor = useEditor({
     triggerAutoSave();
   },
 });
+
+// Update editor editable state
+watch(
+  [() => editor.value, canEdit],
+  ([editorInstance, editable]) => {
+    if (editorInstance) {
+      editorInstance.setEditable(editable);
+    }
+  },
+  { immediate: true }
+);
 
 const isInitialized = ref(false);
 
@@ -169,7 +190,7 @@ const handleBack = () => {
 };
 
 const handleSave = (silent = false) => {
-  if (!noteId.value || !editor.value) return;
+  if (!noteId.value || !editor.value || !canEdit.value) return;
   
   if (silent) saveStatus.value = 'saving';
   
@@ -308,14 +329,15 @@ const isActive = (type: string, attrs?: Record<string, any>) => {
       <div class="px-4 sm:px-8 pt-6">
         <Input
           v-model="title"
+          :disabled="!canEdit"
           placeholder="Note title..."
-          class="text-2xl font-semibold border-0 border-b border-gray-200 rounded-none px-0 focus:ring-0 text-gray-900 bg-transparent"
+          class="text-2xl font-semibold border-0 border-b border-gray-200 rounded-none px-0 focus:ring-0 text-gray-900 bg-transparent disabled:opacity-100 disabled:cursor-default"
         />
       </div>
 
       <!-- Editor Toolbar -->
       <div
-        v-if="editor"
+        v-if="editor && canEdit"
         class="flex flex-wrap items-center gap-1 px-4 sm:px-8 py-3 border-b border-gray-100"
       >
         <div class="flex items-center gap-0.5">
