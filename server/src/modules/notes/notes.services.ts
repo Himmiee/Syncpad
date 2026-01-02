@@ -24,7 +24,12 @@ export const getUserNotes = async (
   take?: number,
   search?: string
 ) => {
-  const where: any = { ownerId: id };
+  const where: any = {
+    OR: [
+      { ownerId: id },
+      { collaborators: { some: { userId: id } } },
+    ],
+  };
 
   if (search) {
     where.title = { contains: search, mode: 'insensitive' };
@@ -149,7 +154,7 @@ export const deleteNoteWithId = async (id: number, ownerId: number) => {
  */
 export const addCollaborator = async (
   noteId: number,
-  userId: number,
+  userIdentifier: { userId?: number; email?: string },
   role?: CollaboratorRole
 ) => {
   const note = await prisma.note.findUnique({
@@ -158,20 +163,38 @@ export const addCollaborator = async (
     },
   });
   if (!note) throw new Error("Note not found");
-  const user = await prisma.note.findUnique({
-    where: { id: userId },
+
+  let targetUserId = userIdentifier.userId;
+
+  if (!targetUserId && userIdentifier.email) {
+    const user = await prisma.user.findUnique({
+      where: { email: userIdentifier.email },
+    });
+    if (!user) throw new Error("User with this email not found");
+    targetUserId = user.id;
+  }
+
+  if (!targetUserId) throw new Error("User ID or email required");
+
+  // Prevent adding owner as collaborator
+  if (note.ownerId === targetUserId) {
+    throw new Error("Cannot add owner as collaborator");
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: targetUserId },
   });
   if (!user) throw new Error("User not found");
 
   //check for existing collaborations
   const existing = await prisma.collaborator.findFirst({
-    where: { noteId, userId },
+    where: { noteId, userId: targetUserId },
   });
   if (existing) throw new Error("User already a collaborator");
 
   return await prisma.collaborator.create({
     data: {
-      userId,
+      userId: targetUserId,
       noteId,
       role: role || CollaboratorRole.VIEWER,
     },

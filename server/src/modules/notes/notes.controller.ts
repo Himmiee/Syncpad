@@ -180,11 +180,10 @@ export const addCollaboratorToNote = async (
 ) => {
   try {
     const noteId = parseInt(req.params.id);
-    const { userId, role } = req.body;
-    if (!userId) {
-      return res.status(401).json({ error: "userId is required" });
-    }
-    const collaborator = await addCollaborator(noteId, userId, role);
+    const { userId, email, role } = req.body;
+    
+    
+    const collaborator = await addCollaborator(noteId, { userId, email }, role);
     return res.status(201).json({
       message: "Collaborator added successfully",
       collaborator,

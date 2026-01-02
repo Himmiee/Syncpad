@@ -11,7 +11,11 @@ export const noteKeys = {
   list: (page: number, limit: number, search?: string) => [...noteKeys.lists(), { page, limit, search }] as const,
   details: () => [...noteKeys.all, 'detail'] as const,
   detail: (id: number) => [...noteKeys.details(), id] as const,
+  collaborators: (id: number) => [...noteKeys.detail(id), 'collaborators'] as const,
 };
+
+// ... existing useNotes, useNote, etc ...
+
 
 /**
  * Fetch all notes with pagination and search
@@ -99,6 +103,78 @@ export function useDeleteNote() {
     },
     onError: (error: any) => {
       toast.error('Failed to delete note', getErrorMessage(error, 'Please try again'));
+    },
+  });
+}
+
+/**
+ * Fetch collaborators for a note
+ */
+export function useCollaborators(noteId: number) {
+  return useQuery({
+    queryKey: noteKeys.collaborators(noteId),
+    queryFn: () => notesApi.getCollaborators(noteId),
+    enabled: !!noteId,
+    staleTime: 1000 * 60 * 5, // 5 minutes cache
+  });
+}
+
+/**
+ * Add a collaborator
+ */
+export function useAddCollaborator() {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+
+  return useMutation({
+    mutationFn: ({ noteId, data }: { noteId: number; data: { userId?: number; email?: string; role?: 'VIEWER' | 'EDITOR' } }) =>
+      notesApi.addCollaborator(noteId, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: noteKeys.collaborators(variables.noteId) });
+      toast.success('Collaborator added', 'User has been invited to the note');
+    },
+    onError: (error: any) => {
+      toast.error('Failed to add collaborator', getErrorMessage(error, 'Please try again'));
+    },
+  });
+}
+
+/**
+ * Update a collaborator
+ */
+export function useUpdateCollaborator() {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+
+  return useMutation({
+    mutationFn: ({ noteId, collabId, role }: { noteId: number; collabId: number; role: 'VIEWER' | 'EDITOR' }) =>
+      notesApi.updateCollaborator(noteId, collabId, role),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: noteKeys.collaborators(variables.noteId) });
+      toast.success('Role updated', 'Collaborator permissions have been updated');
+    },
+    onError: (error: any) => {
+      toast.error('Failed to update role', getErrorMessage(error, 'Please try again'));
+    },
+  });
+}
+
+/**
+ * Remove a collaborator
+ */
+export function useRemoveCollaborator() {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+
+  return useMutation({
+    mutationFn: ({ noteId, collabId }: { noteId: number; collabId: number }) =>
+      notesApi.removeCollaborator(noteId, collabId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: noteKeys.collaborators(variables.noteId) });
+      toast.success('Collaborator removed', 'User no longer has access to this note');
+    },
+    onError: (error: any) => {
+      toast.error('Failed to remove collaborator', getErrorMessage(error, 'Please try again'));
     },
   });
 }

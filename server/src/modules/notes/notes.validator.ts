@@ -22,13 +22,17 @@ export const updateNoteSchema = z.object({
 
 // Schema for adding a collaborator
 export const addCollaboratorSchema = z.object({
-  userId: z.number().int().positive("User ID must be a positive integer"),
+  userId: z.number().int().positive("User ID must be a positive integer").optional(),
+  email: z.string().email("Invalid email format").optional(),
   role: z
     .nativeEnum(CollaboratorRole, {
       message: `Role must be one of: ${Object.values(CollaboratorRole).join(", ")}`,
     })
     .optional()
     .default(CollaboratorRole.VIEWER),
+}).refine((data) => data.userId || data.email, {
+  message: "Either userId or email must be provided",
+  path: ["email"],
 });
 
 // Schema for updating collaborator role

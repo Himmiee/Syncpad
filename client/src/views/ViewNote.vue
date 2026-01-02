@@ -28,6 +28,8 @@ import Button from '@/components/ui/button/Button.vue';
 import Input from '@/components/ui/input/Input.vue';
 import { useNote, useUpdateNote } from '@/composables/useNotes';
 import DeleteNoteModal from '@/components/notes/DeleteNoteModal.vue';
+import CollaboratorModal from '@/components/notes/CollaboratorModal.vue';
+import { useAuthStore } from '@/stores/auth.store';
 
 const route = useRoute();
 const router = useRouter();
@@ -48,6 +50,11 @@ const originalTitle = ref('');
 
 // Delete modal state
 const isDeleteModalOpen = ref(false);
+const isCollaboratorModalOpen = ref(false);
+
+// Auth
+const authStore = useAuthStore();
+const currentUserId = computed(() => Number(authStore.user?.id));
 
 // Unsaved changes modal state
 const isUnsavedModalOpen = ref(false);
@@ -242,7 +249,12 @@ const isActive = (type: string, attrs?: Record<string, any>) => {
           <History class="w-4 h-4 mr-2 text-gray-600" />
           <span class="text-gray-600">Versions</span>
         </Button>
-        <Button variant="ghost" size="sm" class="hidden sm:flex">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          class="hidden sm:flex"
+          @click="isCollaboratorModalOpen = true"
+        >
           <Users class="w-4 h-4 mr-2 text-gray-600" />
           <span class="text-gray-600">Collaborators</span>
         </Button>
@@ -450,6 +462,15 @@ const isActive = (type: string, attrs?: Record<string, any>) => {
       :note="note || null"
       @close="isDeleteModalOpen = false"
       @deleted="handleNoteDeleted"
+    />
+
+    <!-- Collaborator Modal -->
+    <CollaboratorModal
+      :is-open="isCollaboratorModalOpen"
+      :note-id="noteId"
+      :owner-id="note?.ownerId"
+      :current-user-id="currentUserId"
+      @close="isCollaboratorModalOpen = false"
     />
 
     <!-- Unsaved Changes Modal -->

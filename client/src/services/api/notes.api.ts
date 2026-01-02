@@ -115,10 +115,21 @@ export const notesApi = {
    */
   addCollaborator: async (
     noteId: number,
-    userId: number,
-    role: 'VIEWER' | 'EDITOR' = 'VIEWER'
+    data: { userId?: number; email?: string; role?: 'VIEWER' | 'EDITOR' }
   ): Promise<{ message: string; collaborator: Collaborator }> => {
-    const response = await api.post(`/notes/${noteId}/collaborators`, { userId, role });
+    const response = await api.post(`/notes/${noteId}/collaborators`, { ...data, role: data.role || 'VIEWER' });
+    return response.data;
+  },
+
+  /**
+   * Update a collaborator's role
+   */
+  updateCollaborator: async (
+    noteId: number,
+    collabId: number,
+    role: 'VIEWER' | 'EDITOR'
+  ): Promise<{ message: string; collaborator: Collaborator }> => {
+    const response = await api.patch(`/notes/${noteId}/collaborators/${collabId}`, { role });
     return response.data;
   },
 
