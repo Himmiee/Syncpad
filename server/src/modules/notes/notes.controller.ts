@@ -25,7 +25,7 @@ export const CreateNotes = async (
   try {
     const { title, content } = req.body;
     const ownerId = Number(req.userId);
-    if (!title || !content) {
+    if (!title || content === undefined) {
       return res.status(400).json({ error: "Title and content are required" });
     }
     if (!ownerId) {
@@ -118,7 +118,7 @@ export const UpdateNoteById = async (
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    if (!title || !content) {
+    if (!title || content === undefined) {
       return res.status(400).json({ error: "Title and content are required" });
     }
 

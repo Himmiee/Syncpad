@@ -56,6 +56,22 @@ const pendingNavigation = ref<(() => void) | null>(null);
 // Mutations
 const { mutate: updateNote, isPending: isUpdating } = useUpdateNote();
 
+// Status state
+const saveStatus = ref<'saved' | 'saving' | 'error' | 'unsaved'>('saved');
+const lastSavedAt = ref<Date | null>(null);
+
+// Debounce timer
+let autoSaveTimer: any = null;
+
+const triggerAutoSave = () => {
+  if (autoSaveTimer) clearTimeout(autoSaveTimer);
+  saveStatus.value = 'unsaved';
+  
+  autoSaveTimer = setTimeout(() => {
+    handleSave(true); // silent = true
+  }, 2000); // Auto-save after 2 seconds
+};
+
 // TipTap Editor
 const editor = useEditor({
   extensions: [
@@ -67,6 +83,7 @@ const editor = useEditor({
   content: '',
   onUpdate: () => {
     hasUnsavedChanges.value = true;
+    triggerAutoSave();
   },
 });
 
@@ -85,6 +102,8 @@ watch(
       editorInstance.commands.setContent(noteData.content || '', { emitUpdate: false });
       
       hasUnsavedChanges.value = false;
+      saveStatus.value = 'saved';
+      lastSavedAt.value = new Date(noteData.updatedAt);
       isInitialized.value = true;
     }
   },
@@ -96,6 +115,7 @@ watch(title, () => {
   // Only mark as unsaved if initialized (prevents initial load triggering it)
   if (isInitialized.value && note.value && title.value !== note.value.title) {
     hasUnsavedChanges.value = true;
+    triggerAutoSave();
   }
 });
 
@@ -141,8 +161,10 @@ const handleBack = () => {
   router.push('/dashboard/notes');
 };
 
-const handleSave = () => {
+const handleSave = (silent = false) => {
   if (!noteId.value || !editor.value) return;
+  
+  if (silent) saveStatus.value = 'saving';
   
   updateNote(
     {
@@ -151,6 +173,8 @@ const handleSave = () => {
         title: title.value.trim(),
         content: editor.value.getJSON(),
       },
+      // @ts-ignore
+      silent,
     },
     {
       onSuccess: () => {
@@ -158,7 +182,13 @@ const handleSave = () => {
         // Update originals after save
         originalTitle.value = title.value.trim();
         originalContent.value = editor.value?.getJSON();
+        
+        saveStatus.value = 'saved';
+        lastSavedAt.value = new Date();
       },
+      onError: () => {
+        saveStatus.value = 'error';
+      }
     }
   );
 };
@@ -183,7 +213,7 @@ const isActive = (type: string, attrs?: Record<string, any>) => {
     <!-- Top Bar -->
     <div class="flex items-center justify-between p-4 border-b border-gray-200">
       <div class="flex items-center gap-3">
-        <Button variant="ghost" size="sm" @click="handleBack">
+        <Button variant="ghost" size="sm" @click="handleBack" class="lg:hidden">
           <ArrowLeft class="w-4 h-4 mr-2 text-gray-700" />
           <span class="hidden sm:inline text-gray-700">Back</span>
         </Button>
@@ -194,6 +224,19 @@ const isActive = (type: string, attrs?: Record<string, any>) => {
       </div>
       
       <div class="flex items-center gap-2">
+        <!-- Status Indicator -->
+        <div class="hidden sm:flex items-center mr-2 text-xs font-medium">
+          <span v-if="saveStatus === 'saving'" class="flex items-center gap-1.5 text-gray-500">
+            <Loader class="w-3 h-3 animate-spin" /> Saving...
+          </span>
+          <span v-else-if="saveStatus === 'saved'" class="flex items-center gap-1.5 text-gray-400">
+            Saved
+          </span>
+          <span v-else-if="saveStatus === 'error'" class="text-red-500">
+             Failed to save
+          </span>
+        </div>
+
         <!-- Action Buttons -->
         <Button variant="ghost" size="sm" class="hidden sm:flex">
           <History class="w-4 h-4 mr-2 text-gray-600" />
@@ -217,15 +260,16 @@ const isActive = (type: string, attrs?: Record<string, any>) => {
           <Trash2 class="w-4 h-4" />
         </Button>
         
+        <!-- Manual Save (only visible on mobile or if error) -->
         <Button
           variant="default"
           size="sm"
+          class="sm:hidden"
           :disabled="isUpdating || !hasUnsavedChanges"
-          @click="handleSave"
+          @click="() => handleSave(false)"
         >
-          <Loader v-if="isUpdating" class="w-4 h-4 mr-2 animate-spin" />
-          <Save v-else class="w-4 h-4 mr-2" />
-          Save
+          <Loader v-if="isUpdating" class="w-4 h-4 animate-spin" />
+          <Save v-else class="w-4 h-4" />
         </Button>
       </div>
     </div>

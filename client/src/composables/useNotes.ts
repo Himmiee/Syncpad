@@ -67,11 +67,15 @@ export function useUpdateNote() {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: UpdateNoteData }) =>
       notesApi.update(id, data),
-    onSuccess: (_, variables) => {
+    onSuccess: (_, variables: any) => {
       // Invalidate both list and detail queries
       queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
       queryClient.invalidateQueries({ queryKey: noteKeys.detail(variables.id) });
-      toast.success('Note updated', 'Your changes have been saved');
+      
+      // Only show toast if not silent
+      if (!variables.silent) {
+        toast.success('Note updated', 'Your changes have been saved');
+      }
     },
     onError: (error: any) => {
       toast.error('Failed to update note', getErrorMessage(error, 'Please try again'));

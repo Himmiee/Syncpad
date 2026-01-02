@@ -112,9 +112,12 @@ const iconColorMap = {
     width: 100%;
   }
 
+  /* Ensure toast doesn't exceed viewport width - padding */
   [data-scope='toast'][data-part='root'] {
     inset-inline: 0;
-    width: calc(100% - var(--gap) * 2);
+    max-width: calc(100vw - 32px); /* Fallback */
+    width: 100%;
+    margin: 0 auto;
   }
 }
 </style>

@@ -22,8 +22,13 @@ const routes = [
     meta: { requiresAuth: true },
     children: [
       { path: "", component: Home },
-      { path: "notes", component: Notes },
-      { path: "notes/:id", component: ViewNote },
+      { 
+        path: "notes", 
+        component: Notes,
+        children: [
+          { path: ":id", component: ViewNote },
+        ]
+      },
       { path: "tasks", component: Tasks },
       { path: "collaborators", component: Team },
       { path: "settings", component: Settings },
