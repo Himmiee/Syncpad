@@ -255,7 +255,59 @@ export const updateCollaboratorRole = async (
   }
   return await prisma.collaborator.update({
     where: { id: collabId },
-    data: { role },
+    data: { 
+      role,
+      // Clear request status if promoting
+      requestedEditAccess: false,
+      requestMessage: null
+    },
+  });
+};
+
+/**
+ * Request edit access for a note
+ */
+export const requestEditAccess = async (
+  noteId: number,
+  userId: number,
+  message?: string
+) => {
+  const collaborator = await prisma.collaborator.findFirst({
+    where: { noteId, userId },
+  });
+
+  if (!collaborator) throw new Error("Collaborator not found");
+  if (collaborator.role === CollaboratorRole.EDITOR) {
+    throw new Error("Already an editor");
+  }
+
+  return await prisma.collaborator.update({
+    where: { id: collaborator.id },
+    data: {
+      requestedEditAccess: true,
+      requestMessage: message,
+    },
+  });
+};
+
+/**
+ * Deny edit access request
+ */
+export const denyEditAccess = async (noteId: number, collabId: number) => {
+  const collaborator = await prisma.collaborator.findUnique({
+    where: { id: collabId },
+  });
+
+  if (!collaborator || collaborator.noteId !== noteId) {
+    throw new Error("Collaborator not found");
+  }
+
+  return await prisma.collaborator.update({
+    where: { id: collabId },
+    data: {
+      requestedEditAccess: false,
+      requestMessage: null,
+    },
   });
 };
 

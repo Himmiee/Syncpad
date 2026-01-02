@@ -178,3 +178,47 @@ export function useRemoveCollaborator() {
     },
   });
 }
+
+
+/**
+ * Request edit access
+ */
+export function useRequestEditAccess() {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+
+  return useMutation({
+    mutationFn: ({ noteId, message }: { noteId: number; message?: string }) =>
+      notesApi.requestEditAccess(noteId, message),
+    onSuccess: (_, variables) => {
+      // Invalidate collaborators
+      queryClient.invalidateQueries({ queryKey: noteKeys.collaborators(variables.noteId) });
+      // Also detail, as current user permission might rely on it (though role doesn't change yet)
+      queryClient.invalidateQueries({ queryKey: noteKeys.detail(variables.noteId) });
+      toast.success('Access requested', 'Owner has been notified');
+    },
+    onError: (error: any) => {
+      toast.error('Failed to request access', getErrorMessage(error, 'Please try again'));
+    },
+  });
+}
+
+/**
+ * Deny edit access
+ */
+export function useDenyEditAccess() {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+
+  return useMutation({
+    mutationFn: ({ noteId, collabId }: { noteId: number; collabId: number }) =>
+      notesApi.denyEditAccess(noteId, collabId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: noteKeys.collaborators(variables.noteId) });
+      toast.success('Request denied', 'Collaborator request has been denied');
+    },
+    onError: (error: any) => {
+      toast.error('Failed to deny request', getErrorMessage(error, 'Please try again'));
+    },
+  });
+}

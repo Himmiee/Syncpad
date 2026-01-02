@@ -104,6 +104,9 @@ model Collaborator {
   taskId  Int?
   role    CollaboratorRole @default(VIEWER)
   
+  requestedEditAccess Boolean @default(false)
+  requestMessage      String?
+
   user    User     @relation(fields: [userId], references: [id])
   note    Note?    @relation(fields: [noteId], references: [id])
   task    Task?    @relation(fields: [taskId], references: [id])

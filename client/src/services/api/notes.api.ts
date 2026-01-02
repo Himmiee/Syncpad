@@ -140,4 +140,26 @@ export const notesApi = {
     const response = await api.delete(`/notes/${noteId}/collaborators/${collabId}`);
     return response.data;
   },
+
+  /**
+   * Request edit access
+   */
+  requestEditAccess: async (
+    noteId: number,
+    message?: string
+  ): Promise<{ message: string; collaborator: Collaborator }> => {
+    const response = await api.post(`/notes/${noteId}/collaborators/request-access`, { message });
+    return response.data;
+  },
+
+  /**
+   * Deny edit access
+   */
+  denyEditAccess: async (
+    noteId: number,
+    collabId: number
+  ): Promise<{ message: string; collaborator: Collaborator }> => {
+    const response = await api.post(`/notes/${noteId}/collaborators/${collabId}/deny`);
+    return response.data;
+  },
 };

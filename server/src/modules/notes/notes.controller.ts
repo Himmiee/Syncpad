@@ -9,6 +9,8 @@ import {
   removeCollaborator,
   updateCollaboratorRole,
   updateNoteWithId,
+  requestEditAccess,
+  denyEditAccess,
 } from "./notes.services";
 import { CollaboratorRole } from "@/generated/prisma";
 import {
@@ -266,5 +268,37 @@ export const deleteCollaborator = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error(error);
     res.status(500).json({ error: error.message || "Internal server error" });
+  }
+};
+
+export const requestAccess = async (req: Request, res: Response) => {
+  try {
+    const noteId = parseInt(req.params.id);
+    const userId = Number(req.userId);
+    const { message } = req.body;
+
+    if (isNaN(noteId)) return res.status(400).json({ error: "Invalid note ID" });
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+    const result = await requestEditAccess(noteId, userId, message);
+    res.status(200).json({ message: "Access requested", collaborator: result });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+export const denyAccess = async (req: Request, res: Response) => {
+  try {
+    const noteId = parseInt(req.params.id);
+    const collabId = parseInt(req.params.collabId);
+
+    if (isNaN(noteId) || isNaN(collabId)) {
+      return res.status(400).json({ error: "Invalid note or collaborator ID" });
+    }
+
+    const result = await denyEditAccess(noteId, collabId);
+    res.status(200).json({ message: "Request denied", collaborator: result });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
   }
 };

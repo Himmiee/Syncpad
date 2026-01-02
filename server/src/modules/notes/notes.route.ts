@@ -122,4 +122,28 @@ router.delete(
   noteControllers.deleteCollaborator
 );
 
+/**
+ * @route   POST /notes/:id/collaborators/request-access
+ * @desc    Request edit access for a note
+ * @access  Private (requires JWT + view permission)
+ */
+router.post(
+  "/:id/collaborators/request-access",
+  AuthMiddleware,
+  canViewNote,
+  noteControllers.requestAccess
+);
+
+/**
+ * @route   POST /notes/:id/collaborators/:collabId/deny
+ * @desc    Deny edit access request
+ * @access  Private (requires JWT + owner permission)
+ */
+router.post(
+  "/:id/collaborators/:collabId/deny",
+  AuthMiddleware,
+  canManageCollaborators,
+  noteControllers.denyAccess
+);
+
 export default router;
