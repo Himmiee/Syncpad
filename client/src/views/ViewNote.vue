@@ -23,10 +23,12 @@ import {
   Redo,
   Code,
   Quote,
+  MessageSquarePlus,
+  Lock,
 } from 'lucide-vue-next';
 import Button from '@/components/ui/button/Button.vue';
 import Input from '@/components/ui/input/Input.vue';
-import { useNote, useUpdateNote } from '@/composables/useNotes';
+import { useNote, useUpdateNote, useRequestEditAccess } from '@/composables/useNotes';
 import DeleteNoteModal from '@/components/notes/DeleteNoteModal.vue';
 import CollaboratorModal from '@/components/notes/CollaboratorModal.vue';
 import { useAuthStore } from '@/stores/auth.store';
@@ -52,6 +54,11 @@ const originalTitle = ref('');
 const isDeleteModalOpen = ref(false);
 const isCollaboratorModalOpen = ref(false);
 
+// Request Access state
+const isRequestModalOpen = ref(false);
+const requestMessage = ref('');
+const { mutate: requestAccess, isPending: isRequesting } = useRequestEditAccess();
+
 // Auth
 const authStore = useAuthStore();
 const currentUserId = computed(() => Number(authStore.user?.id));
@@ -63,6 +70,32 @@ const canEdit = computed(() => {
   const collaborator = note.value.collaborators?.find((c: any) => c.userId === currentUserId.value);
   return collaborator?.role === 'EDITOR';
 });
+
+const isOwner = computed(() => note.value?.ownerId === currentUserId.value);
+
+const hasPendingRequest = computed(() => {
+  if (!note.value || !currentUserId.value) return false;
+  const collaborator = note.value.collaborators?.find((c: any) => c.userId === currentUserId.value);
+  return collaborator?.requestedEditAccess;
+});
+
+const pendingRequestsCount = computed(() => {
+  if (!isOwner.value || !note.value?.collaborators) return 0;
+  return note.value.collaborators.filter((c: any) => c.requestedEditAccess).length;
+});
+
+const handleRequestAccess = () => {
+  if (!noteId.value) return;
+  requestAccess(
+    { noteId: noteId.value, message: requestMessage.value },
+    {
+      onSuccess: () => {
+        isRequestModalOpen.value = false;
+        requestMessage.value = '';
+      }
+    }
+  );
+};
 
 
 
@@ -273,11 +306,25 @@ const isActive = (type: string, attrs?: Record<string, any>) => {
         <Button 
           variant="ghost" 
           size="sm" 
-          class="hidden sm:flex"
           @click="isCollaboratorModalOpen = true"
+          class="relative hidden sm:flex"
         >
+          <div v-if="pendingRequestsCount > 0" class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-white" />
           <Users class="w-4 h-4 mr-2 text-gray-600" />
           <span class="text-gray-600">Collaborators</span>
+        </Button>
+        
+        <Button 
+          v-if="!canEdit && !isOwner"
+          variant="ghost" 
+          size="sm" 
+          class="hidden sm:flex text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+          :disabled="hasPendingRequest"
+          @click="isRequestModalOpen = true"
+        >
+          <Lock v-if="hasPendingRequest" class="w-4 h-4 mr-2" />
+          <MessageSquarePlus v-else class="w-4 h-4 mr-2" />
+          <span>{{ hasPendingRequest ? 'Request Sent' : 'Request Edit' }}</span>
         </Button>
         <Button variant="ghost" size="sm" class="hidden sm:flex">
           <Share2 class="w-4 h-4 mr-2 text-gray-600" />
@@ -494,6 +541,37 @@ const isActive = (type: string, attrs?: Record<string, any>) => {
       :current-user-id="currentUserId"
       @close="isCollaboratorModalOpen = false"
     />
+
+    <!-- Request Access Modal -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div
+          v-if="isRequestModalOpen"
+          class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          @click.self="isRequestModalOpen = false"
+        >
+          <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Request Edit Access</h3>
+            <p class="text-sm text-gray-500 mb-4">
+              Add a message to the owner explaining why you need access.
+            </p>
+            
+            <textarea
+              v-model="requestMessage"
+              class="w-full text-sm p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none min-h-[100px] mb-4 text-gray-900"
+              placeholder="e.g. I need to fix a typo..."
+            ></textarea>
+            
+            <div class="flex justify-end gap-2">
+              <Button variant="ghost" @click="isRequestModalOpen = false">Cancel</Button>
+              <Button @click="handleRequestAccess" :disabled="isRequesting">
+                {{ isRequesting ? 'Sending...' : 'Send Request' }}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
 
     <!-- Unsaved Changes Modal -->
     <Teleport to="body">

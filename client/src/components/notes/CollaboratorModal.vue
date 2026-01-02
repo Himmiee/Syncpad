@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { ref } from 'vue';
 import { 
   Users, 
   X, 
   Loader, 
   Mail, 
   Trash2, 
-  UserPlus
+  UserPlus,
+  Check,
+  MessageCircle,
 } from 'lucide-vue-next';
 import Button from '@/components/ui/button/Button.vue';
 import Input from '@/components/ui/input/Input.vue';
@@ -19,12 +20,14 @@ import {
 } from '@/components/ui/select';
 
 
-import { 
-  useCollaborators, 
-  useAddCollaborator, 
+import {
+  useCollaborators,
+  useAddCollaborator,
   useRemoveCollaborator,
-  useUpdateCollaborator 
+  useUpdateCollaborator,
+  useDenyEditAccess,
 } from '@/composables/useNotes';
+import { ref } from 'vue';
 
 interface Props {
   isOpen: boolean;
@@ -48,6 +51,7 @@ const { data: collaboratorsData, isLoading } = useCollaborators(props.noteId || 
 const { mutate: addCollaborator, isPending: isAdding } = useAddCollaborator();
 const { mutate: removeCollaborator } = useRemoveCollaborator();
 const { mutate: updateCollaborator } = useUpdateCollaborator();
+const { mutate: denyEditAccess } = useDenyEditAccess();
 
 // Computed
 // const collaborators = computed(() => collaboratorsData.value?.collaborators || []);
@@ -78,6 +82,16 @@ const handleUpdateRole = (collabId: number, newRole: 'VIEWER' | 'EDITOR') => {
   updateCollaborator({ noteId: props.noteId, collabId, role: newRole });
 };
 
+const handleApprove = (collabId: number) => {
+  if (!props.noteId) return;
+  updateCollaborator({ noteId: props.noteId, collabId, role: 'EDITOR' });
+};
+
+const handleDeny = (collabId: number) => {
+  if (!props.noteId) return;
+  denyEditAccess({ noteId: props.noteId, collabId });
+};
+
 const handleClose = () => {
   emit('close');
 };
@@ -95,7 +109,7 @@ const handleClose = () => {
         <Transition name="scale">
           <div
             v-if="isOpen"
-            class="bg-white rounded-xl shadow-xl max-w-md w-full flex flex-col max-h-[80vh] text-gray-900"
+            class="bg-white rounded-xl shadow-xl max-w-xl w-full flex flex-col max-h-[80vh] text-gray-900"
           >
             <!-- Header -->
             <div class="p-6 border-b border-gray-100 flex items-center justify-between">
@@ -157,11 +171,11 @@ const handleClose = () => {
                   <div 
                     v-for="collab in collaboratorsData?.collaborators || []" 
                     :key="collab.id"
-                    class="flex items-center justify-between group"
+                    class="flex items-start justify-between group py-3"
                   >
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-start gap-3 flex-1 min-w-0 pr-4">
                       <!-- Avatar -->
-                      <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-200">
+                      <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-200 mt-1 flex-shrink-0">
                         <img 
                           v-if="collab.user.avatar" 
                           :src="collab.user.avatar" 
@@ -173,18 +187,51 @@ const handleClose = () => {
                         </span>
                       </div>
                       
-                      <div>
-                        <p class="text-sm font-medium text-gray-900">
+                      <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-900 truncate">
                           {{ collab.user.username }}
                         </p>
-                        <p class="text-xs text-gray-500">
+                        <p class="text-xs text-gray-500 truncate mb-1">
                           {{ collab.user.email }}
                         </p>
+
+                        <!-- Request Info (Nested) -->
+                        <div v-if="collab.requestedEditAccess" class="mt-2 bg-amber-50 rounded-md p-2 border border-amber-100">
+                          <div class="flex items-center gap-2 mb-1 flex-wrap">
+                            <div class="flex items-center gap-1 bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-xs font-medium">
+                              <MessageCircle class="w-3 h-3" />
+                              Requested Edit
+                            </div>
+
+                            <!-- Owner Actions -->
+                            <div v-if="props.ownerId === props.currentUserId" class="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                class="h-5 w-auto px-2 text-xs bg-green-100 text-green-700 hover:bg-green-200"
+                                @click="handleApprove(collab.id)"
+                              >
+                                Approve
+                              </Button>
+                               <Button
+                                variant="ghost"
+                                size="sm"
+                                class="h-5 w-auto px-2 text-xs bg-red-100 text-red-700 hover:bg-red-200"
+                                @click="handleDeny(collab.id)"
+                              >
+                                Deny
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          <p v-if="collab.requestMessage" class="text-xs text-amber-800 italic break-words">
+                            "{{ collab.requestMessage }}"
+                          </p>
+                        </div>
                       </div>
                     </div>
 
-                    <div class="flex items-center gap-2">
-                      <!-- Role Badge/Selector -->
+                    <div class="flex items-center gap-2 flex-shrink-0 mt-1">
                       <!-- Role Badge/Selector -->
                       <Select
                         :model-value="collab.role"

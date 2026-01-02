@@ -22,6 +22,8 @@ export interface Collaborator {
   userId: number;
   noteId: number;
   role: 'VIEWER' | 'EDITOR';
+  requestedEditAccess?: boolean;
+  requestMessage?: string | null;
   user: {
     id: number;
     username: string;
