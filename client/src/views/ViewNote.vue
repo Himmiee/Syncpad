@@ -120,6 +120,13 @@ const triggerAutoSave = () => {
   }, 2000); // Auto-save after 2 seconds
 };
 
+const isInitialized = ref(false);
+
+// Helper to check if content actually changed
+const isContentChanged = (content1: any, content2: any) => {
+  return JSON.stringify(content1) !== JSON.stringify(content2);
+};
+
 // TipTap Editor
 const editor = useEditor({
   extensions: [
@@ -129,9 +136,23 @@ const editor = useEditor({
     }),
   ],
   content: '',
-  onUpdate: () => {
-    hasUnsavedChanges.value = true;
-    triggerAutoSave();
+  onUpdate: ({ editor }) => {
+    // Check if content actually changed
+    // We check against originalContent (saved state)
+    // AND if initialized (to allow initial load)
+    if (isInitialized.value && originalContent.value) {
+      const currentContent = editor.getJSON();
+      
+      if (isContentChanged(currentContent, originalContent.value)) {
+        hasUnsavedChanges.value = true;
+        triggerAutoSave();
+      } else {
+        // If content reverted to original, mark as saved and clear timer
+        hasUnsavedChanges.value = false;
+        if (autoSaveTimer) clearTimeout(autoSaveTimer);
+        saveStatus.value = 'saved';
+      }
+    }
   },
 });
 
@@ -146,7 +167,23 @@ watch(
   { immediate: true }
 );
 
-const isInitialized = ref(false);
+// Watch for note ID changes to prevent cross-contamination
+watch(noteId, () => {
+  // Clear any pending saves from previous note
+  if (autoSaveTimer) clearTimeout(autoSaveTimer);
+  autoSaveTimer = null;
+  
+  // Reset state immediately
+  isInitialized.value = false;
+  hasUnsavedChanges.value = false;
+  saveStatus.value = 'saved';
+  title.value = '';
+  
+  // Clear editor content to prevent accidental saves of old content
+  if (editor.value) {
+    editor.value.commands.setContent('', { emitUpdate: false });
+  }
+});
 
 // Watch for note data and update form
 watch(
@@ -190,9 +227,18 @@ handleVersionRestored = async () => {
 // Watch title changes
 watch(title, () => {
   // Only mark as unsaved if initialized (prevents initial load triggering it)
-  if (isInitialized.value && note.value && title.value !== note.value.title) {
+  // Check against originalTitle which tracks the last saved state
+  if (isInitialized.value && title.value !== originalTitle.value) {
     hasUnsavedChanges.value = true;
     triggerAutoSave();
+  } else if (isInitialized.value && title.value === originalTitle.value) {
+    // If reverted to original title and no content changes, we could mark as saved
+    // But we need to check content too. For simplicity, we just stop triggering save.
+    // Ideally we should check both.
+    
+    // For now, if we reverting title, we don't necessarily clear unsaved flag 
+    // because content might still be unsaved.
+    // But we shouldn't trigger unnecessary autosave if it matches.
   }
 });
 
