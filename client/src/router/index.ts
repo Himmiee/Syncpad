@@ -10,6 +10,7 @@ import Login from "@/views/auth/Login.vue";
 import DefaultLayout from "@/layouts/DefaultLayout.vue";
 import AuthLayout from "@/layouts/AuthLayout.vue";
 import ViewNote from "@/views/ViewNote.vue";
+import SharedNote from "@/views/SharedNote.vue";
 
 const routes = [
   {
@@ -42,6 +43,12 @@ const routes = [
       { path: "login", component: Login },
       { path: "register", component: Register },
     ],
+  },
+  {
+    path: "/shared/:token",
+    name: "SharedNote",
+    component: SharedNote,
+    meta: { requiresAuth: false },
   },
 ];
 

@@ -6,7 +6,6 @@ import {
   Mail, 
   Trash2, 
   UserPlus,
-  Check,
   MessageCircle,
 } from 'lucide-vue-next';
 import Button from '@/components/ui/button/Button.vue';
@@ -32,8 +31,8 @@ import { ref } from 'vue';
 interface Props {
   isOpen: boolean;
   noteId: number | null;
-  ownerId?: number; // Pass ownerId to identify owner vs collaborators
-  currentUserId?: number; // Pass current user id for permissions check
+  ownerId?: number; 
+  currentUserId?: number; 
 }
 
 const props = defineProps<Props>();

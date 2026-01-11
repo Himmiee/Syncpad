@@ -2,6 +2,7 @@ import prisma from "@/config/db";
 import { Notes } from "../../types/notes";
 import { findUserById } from "../user/user.service";
 import { CollaboratorRole } from "@/generated/prisma";
+import { createNoteVersion } from "../versions/versions.service";
 
 /**
  * Get all user notes with pagination support
@@ -107,13 +108,25 @@ export const updateNoteWithId = async (
   ownerId: number,
   data: Partial<Notes>
 ) => {
+  // Get current note with full content for versioning
   const note = await prisma.note.findUnique({
     where: { id },
-    select: { ownerId: true, owner: true },
+    select: { ownerId: true, title: true, content: true },
   });
   if (!note) throw new Error("Note not found");
 
   if (note.ownerId !== ownerId) throw new Error("Not authorized");
+
+  // Create a version snapshot of the current state before updating
+  // Only create version if content is actually changing
+  if (data.content !== undefined) {
+    try {
+      await createNoteVersion(id, note.title, note.content, ownerId);
+    } catch (err) {
+      // Log but don't fail the update if versioning fails
+      console.error("Failed to create version:", err);
+    }
+  }
 
   return await prisma.note.update({
     where: { id },

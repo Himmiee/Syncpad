@@ -12,17 +12,6 @@ import {
   Users,
   History,
   Trash2,
-  Bold,
-  Italic,
-  Strikethrough,
-  List,
-  ListOrdered,
-  Heading1,
-  Heading2,
-  Undo,
-  Redo,
-  Code,
-  Quote,
   MessageSquarePlus,
   Lock,
 } from 'lucide-vue-next';
@@ -31,6 +20,10 @@ import Input from '@/components/ui/input/Input.vue';
 import { useNote, useUpdateNote, useRequestEditAccess } from '@/composables/useNotes';
 import DeleteNoteModal from '@/components/notes/DeleteNoteModal.vue';
 import CollaboratorModal from '@/components/notes/CollaboratorModal.vue';
+import ShareModal from '@/components/notes/ShareModal.vue';
+import VersionsModal from '@/components/notes/VersionsModal.vue';
+import NoteEditorToolbar from '@/components/notes/NoteEditorToolbar.vue';
+import NoteActionsMenu from '@/components/notes/NoteActionsMenu.vue';
 import { useAuthStore } from '@/stores/auth.store';
 
 const route = useRoute();
@@ -40,9 +33,12 @@ const router = useRouter();
 const noteId = computed(() => Number(route.params.id));
 
 // Fetch note
-const { data, isLoading, isError, error } = useNote(noteId.value);
+const { data, isLoading, isError, error, refetch: refetchNote } = useNote(noteId.value);
 
 const note = computed(() => data.value?.note);
+
+// Forward declaration - will be assigned after editor is defined
+let handleVersionRestored: () => Promise<void>;
 
 // Form state
 const title = ref('');
@@ -53,6 +49,8 @@ const originalTitle = ref('');
 // Delete modal state
 const isDeleteModalOpen = ref(false);
 const isCollaboratorModalOpen = ref(false);
+const isShareModalOpen = ref(false);
+const isVersionsModalOpen = ref(false);
 
 // Request Access state
 const isRequestModalOpen = ref(false);
@@ -171,6 +169,24 @@ watch(
   { immediate: true }
 );
 
+// Handler for when version is restored - need to refresh editor content
+handleVersionRestored = async () => {
+  const result = await refetchNote();
+  const restoredNote = result.data?.note;
+  
+  if (restoredNote && editor.value) {
+    // Manually update the editor with restored content
+    title.value = restoredNote.title;
+    originalTitle.value = restoredNote.title;
+    originalContent.value = restoredNote.content || '';
+    editor.value.commands.setContent(restoredNote.content || '', { emitUpdate: false });
+    
+    hasUnsavedChanges.value = false;
+    saveStatus.value = 'saved';
+    lastSavedAt.value = new Date(restoredNote.updatedAt);
+  }
+};
+
 // Watch title changes
 watch(title, () => {
   // Only mark as unsaved if initialized (prevents initial load triggering it)
@@ -262,11 +278,6 @@ const handleNoteDeleted = () => {
   hasUnsavedChanges.value = false; // Prevent unsaved modal on delete
   router.push('/dashboard/notes');
 };
-
-// Toolbar helpers
-const isActive = (type: string, attrs?: Record<string, any>) => {
-  return editor.value?.isActive(type, attrs) ?? false;
-};
 </script>
 
 <template>
@@ -298,8 +309,20 @@ const isActive = (type: string, attrs?: Record<string, any>) => {
           </span>
         </div>
 
-        <!-- Action Buttons -->
-        <Button variant="ghost" size="sm" class="hidden sm:flex">
+        <!-- Mobile Actions Menu -->
+        <NoteActionsMenu
+          :can-edit="canEdit || false"
+          :is-owner="isOwner || false"
+          :has-pending-request="hasPendingRequest || false"
+          :pending-requests-count="pendingRequestsCount || 0"
+          @open-versions="isVersionsModalOpen = true"
+          @open-collaborators="isCollaboratorModalOpen = true"
+          @open-share="isShareModalOpen = true"
+          @request-edit="isRequestModalOpen = true"
+        />
+
+        <!-- Desktop Action Buttons -->
+        <Button variant="ghost" size="sm" class="hidden sm:flex" @click="isVersionsModalOpen = true">
           <History class="w-4 h-4 mr-2 text-gray-600" />
           <span class="text-gray-600">Versions</span>
         </Button>
@@ -326,7 +349,7 @@ const isActive = (type: string, attrs?: Record<string, any>) => {
           <MessageSquarePlus v-else class="w-4 h-4 mr-2" />
           <span>{{ hasPendingRequest ? 'Request Sent' : 'Request Edit' }}</span>
         </Button>
-        <Button variant="ghost" size="sm" class="hidden sm:flex">
+        <Button variant="ghost" size="sm" class="hidden sm:flex" @click="isShareModalOpen = true">
           <Share2 class="w-4 h-4 mr-2 text-gray-600" />
           <span class="text-gray-600">Share</span>
         </Button>
@@ -383,138 +406,10 @@ const isActive = (type: string, attrs?: Record<string, any>) => {
       </div>
 
       <!-- Editor Toolbar -->
-      <div
+      <NoteEditorToolbar
         v-if="editor && canEdit"
-        class="flex flex-wrap items-center gap-1 px-4 sm:px-8 py-3 border-b border-gray-100"
-      >
-        <div class="flex items-center gap-0.5">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            class="h-8 w-8 p-0"
-            :class="{ 'bg-gray-200': isActive('bold') }"
-            @click="editor?.chain().focus().toggleBold().run()"
-          >
-            <Bold class="w-4 h-4 text-gray-700" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            class="h-8 w-8 p-0"
-            :class="{ 'bg-gray-200': isActive('italic') }"
-            @click="editor?.chain().focus().toggleItalic().run()"
-          >
-            <Italic class="w-4 h-4 text-gray-700" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            class="h-8 w-8 p-0"
-            :class="{ 'bg-gray-200': isActive('strike') }"
-            @click="editor?.chain().focus().toggleStrike().run()"
-          >
-            <Strikethrough class="w-4 h-4 text-gray-700" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            class="h-8 w-8 p-0"
-            :class="{ 'bg-gray-200': isActive('code') }"
-            @click="editor?.chain().focus().toggleCode().run()"
-          >
-            <Code class="w-4 h-4 text-gray-700" />
-          </Button>
-        </div>
-
-        <div class="w-px h-6 bg-gray-200 mx-1 hidden sm:block" />
-
-        <div class="flex items-center gap-0.5">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            class="h-8 w-8 p-0"
-            :class="{ 'bg-gray-200': isActive('heading', { level: 1 }) }"
-            @click="editor?.chain().focus().toggleHeading({ level: 1 }).run()"
-          >
-            <Heading1 class="w-4 h-4 text-gray-700" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            class="h-8 w-8 p-0"
-            :class="{ 'bg-gray-200': isActive('heading', { level: 2 }) }"
-            @click="editor?.chain().focus().toggleHeading({ level: 2 }).run()"
-          >
-            <Heading2 class="w-4 h-4 text-gray-700" />
-          </Button>
-        </div>
-
-        <div class="w-px h-6 bg-gray-200 mx-1 hidden sm:block" />
-
-        <div class="flex items-center gap-0.5">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            class="h-8 w-8 p-0"
-            :class="{ 'bg-gray-200': isActive('bulletList') }"
-            @click="editor?.chain().focus().toggleBulletList().run()"
-          >
-            <List class="w-4 h-4 text-gray-700" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            class="h-8 w-8 p-0"
-            :class="{ 'bg-gray-200': isActive('orderedList') }"
-            @click="editor?.chain().focus().toggleOrderedList().run()"
-          >
-            <ListOrdered class="w-4 h-4 text-gray-700" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            class="h-8 w-8 p-0"
-            :class="{ 'bg-gray-200': isActive('blockquote') }"
-            @click="editor?.chain().focus().toggleBlockquote().run()"
-          >
-            <Quote class="w-4 h-4 text-gray-700" />
-          </Button>
-        </div>
-
-        <div class="w-px h-6 bg-gray-200 mx-1" />
-
-        <div class="flex items-center gap-0.5">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            class="h-8 w-8 p-0"
-            @click="editor?.chain().focus().undo().run()"
-            :disabled="!editor?.can().undo()"
-          >
-            <Undo class="w-4 h-4 text-gray-700" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            class="h-8 w-8 p-0"
-            @click="editor?.chain().focus().redo().run()"
-            :disabled="!editor?.can().redo()"
-          >
-            <Redo class="w-4 h-4 text-gray-700" />
-          </Button>
-        </div>
-      </div>
+        :editor="editor"
+      />
 
       <!-- Editor Content -->
       <div class="flex-1 overflow-y-auto px-4 sm:px-8 py-4">
@@ -540,6 +435,23 @@ const isActive = (type: string, attrs?: Record<string, any>) => {
       :owner-id="note?.ownerId"
       :current-user-id="currentUserId"
       @close="isCollaboratorModalOpen = false"
+    />
+
+    <!-- Share Modal -->
+    <ShareModal
+      :is-open="isShareModalOpen"
+      :note-id="noteId"
+      :note-title="note?.title"
+      @close="isShareModalOpen = false"
+    />
+
+    <!-- Versions Modal -->
+    <VersionsModal
+      :is-open="isVersionsModalOpen"
+      :note-id="noteId"
+      :can-restore="canEdit"
+      @close="isVersionsModalOpen = false"
+      @restored="handleVersionRestored"
     />
 
     <!-- Request Access Modal -->

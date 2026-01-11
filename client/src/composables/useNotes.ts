@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient, keepPreviousData } from '@tanstack/vue-query';
 import { notesApi, type CreateNoteData, type UpdateNoteData } from '@/services/api/notes.api';
+import { shareApi, type CreateShareLinkData } from '@/services/api/share.api';
+import { versionsApi } from '@/services/api/versions.api';
 import { useToast } from './useToast';
 import { getErrorMessage } from '@/lib/helper';
 import { ref, computed } from 'vue';
@@ -14,7 +16,6 @@ export const noteKeys = {
   collaborators: (id: number) => [...noteKeys.detail(id), 'collaborators'] as const,
 };
 
-// ... existing useNotes, useNote, etc ...
 
 
 /**
@@ -219,6 +220,136 @@ export function useDenyEditAccess() {
     },
     onError: (error: any) => {
       toast.error('Failed to deny request', getErrorMessage(error, 'Please try again'));
+    },
+  });
+}
+
+// Share Link Composables
+
+// Share query keys
+export const shareKeys = {
+  all: ['share'] as const,
+  links: (noteId: number) => [...shareKeys.all, 'links', noteId] as const,
+};
+
+/**
+ * Fetch all share links for a note
+ */
+export function useShareLinks(noteId: number) {
+  return useQuery({
+    queryKey: shareKeys.links(noteId),
+    queryFn: () => shareApi.getLinks(noteId),
+    enabled: !!noteId,
+    staleTime: 1000 * 60 * 5, // 5 minutes cache
+  });
+}
+
+/**
+ * Create a new share link
+ */
+export function useCreateShareLink() {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+
+  return useMutation({
+    mutationFn: ({ noteId, data }: { noteId: number; data?: CreateShareLinkData }) =>
+      shareApi.createLink(noteId, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: shareKeys.links(variables.noteId) });
+      toast.success('Share link created', 'Link has been copied to clipboard');
+    },
+    onError: (error: any) => {
+      toast.error('Failed to create link', getErrorMessage(error, 'Please try again'));
+    },
+  });
+}
+
+/**
+ * Update a share link
+ */
+export function useUpdateShareLink() {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+
+  return useMutation({
+    mutationFn: ({ token, noteId, data }: { token: string; noteId: number; data: { isActive?: boolean; permission?: 'VIEW' | 'EDIT' } }) =>
+      shareApi.updateLink(token, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: shareKeys.links(variables.noteId) });
+      toast.success('Link updated', 'Share link settings have been updated');
+    },
+    onError: (error: any) => {
+      toast.error('Failed to update link', getErrorMessage(error, 'Please try again'));
+    },
+  });
+}
+
+/**
+ * Delete/revoke a share link
+ */
+export function useDeleteShareLink() {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+
+  return useMutation({
+    mutationFn: ({ token, noteId }: { token: string; noteId: number }) =>
+      shareApi.deleteLink(token),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: shareKeys.links(variables.noteId) });
+      toast.success('Link revoked', 'Share link has been deleted');
+    },
+    onError: (error: any) => {
+      toast.error('Failed to revoke link', getErrorMessage(error, 'Please try again'));
+    },
+  });
+}
+
+// Version History Composables
+
+// Version query keys
+export const versionKeys = {
+  all: ['versions'] as const,
+  list: (noteId: number) => [...versionKeys.all, 'list', noteId] as const,
+};
+
+/**
+ * Fetch versions for a note (returns last 3 only)
+ */
+export function useVersions(noteId: number) {
+  return useQuery({
+    queryKey: versionKeys.list(noteId),
+    queryFn: async () => {
+      const response = await versionsApi.getVersions(noteId);
+      // Return only last 3 versions
+      return {
+        ...response,
+        versions: response.versions.slice(0, 3),
+      };
+    },
+    enabled: !!noteId,
+    staleTime: 1000 * 60 * 5, // 5 minutes cache
+  });
+}
+
+/**
+ * Restore a note to a specific version
+ */
+export function useRestoreVersion() {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+
+  return useMutation({
+    mutationFn: ({ noteId, version }: { noteId: number; version: number }) =>
+      versionsApi.restoreVersion(noteId, version),
+    onSuccess: (_, variables) => {
+      // Invalidate note detail and versions list
+      queryClient.invalidateQueries({ queryKey: noteKeys.detail(variables.noteId) });
+      queryClient.invalidateQueries({ queryKey: versionKeys.list(variables.noteId) });
+      queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
+      toast.success('Version restored', `Note has been restored to version ${variables.version}`);
+    },
+    onError: (error: any) => {
+      toast.error('Failed to restore version', getErrorMessage(error, 'Please try again'));
     },
   });
 }
