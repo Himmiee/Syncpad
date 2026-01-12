@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import logo from "../../assets/logo/syncpad-logo.svg";
-import { ChevronLeft, ChevronRight, LogOut, Loader } from "lucide-vue-next";
+import { ChevronLeft, ChevronRight, LogOut, Loader, Settings } from "lucide-vue-next";
 import { navItems } from "@/data/data";
 import { useLogout } from "@/composables/useAuth";
 
@@ -86,8 +86,33 @@ const handleLogout = async () => {
       </RouterLink>
     </nav>
 
-    <!-- Logout Button -->
-    <div class="p-2">
+    <!-- Settings & Logout -->
+    <div class="p-2 mt-auto space-y-2">
+      <RouterLink
+        to="/dashboard/settings"
+        class="group flex items-center gap-4 py-3 px-3 rounded-xl transition-all duration-300 hover:bg-primary-10 hover:shadow-sm active:scale-[0.98] text-muted-foreground hover:text-primary-purple font-medium relative"
+        active-class="bg-primary-10 text-primary-purple shadow-sm"
+      >
+        <div class="relative">
+          <div
+            :class="[
+              'p-2 rounded-xl transition-all duration-300',
+              'bg-muted group-hover:bg-primary',
+              $route.path === '/dashboard/settings' ? 'bg-primary shadow-primary-glow' : ''
+            ]"
+          >
+            <Settings
+              :class="[
+                'w-5 h-5 transition-colors duration-300',
+                'text-muted-foreground group-hover:text-white',
+                $route.path === '/dashboard/settings' ? 'text-white' : ''
+              ]"
+            />
+          </div>
+        </div>
+        <span v-if="!isCollapsed" :class="['font-medium', $route.path === '/dashboard/settings' ? 'font-bold' : '']">Settings</span>
+      </RouterLink>
+
       <button
         @click="handleLogout"
         :disabled="isLoggingOut"
